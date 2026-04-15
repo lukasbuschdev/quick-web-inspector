@@ -2,17 +2,37 @@ import { scanDOM } from "./dom-scan.js";
 import { scanScripts } from "./script-scan.js";
 import { scanGlobals } from "./global-scan.js";
 import { scanMeta } from "./meta-scan.js";
+
 import { detectAngular } from "../detectors/frameworks/angular-detector.js";
 import { detectReact } from "../detectors/frameworks/react-detector.js";
+import { detectVue } from "../detectors/frameworks/vue-detector.js";
 import { detectNext } from "../detectors/frameworks/next-detector.js";
 import { detectNuxt } from "../detectors/frameworks/nuxt-detector.js";
 import { detectAstro } from "../detectors/frameworks/astro-detector.js";
-import { detectVue } from "../detectors/frameworks/vue-detector.js";
-import { evaluateDetection } from "../scoring/confidence-engine.js";
+import { detectSvelte } from "../detectors/frameworks/svelte-detector.js";
+import { detectSolid } from "../detectors/frameworks/solid-detector.js";
+import { detectRemix } from "../detectors/frameworks/remix-detector.js";
+
 import { detectTailwind } from "../detectors/libraries/tailwind-detector.js";
 import { detectBootstrap } from "../detectors/libraries/bootstrap-detector.js";
 import { detectAngularMaterial } from "../detectors/libraries/angular-material-detector.js";
 import { detectJQuery } from "../detectors/libraries/jquery-detector.js";
+
+import { evaluateDetection } from "../scoring/confidence-engine.js";
+import { detectGatsby } from "../detectors/frameworks/gatsby-detector.js";
+import { detectAlpine } from "../detectors/frameworks/alpine-detector.js";
+import { detectQwik } from "../detectors/frameworks/qwik-detector.js";
+import { detectPreact } from "../detectors/frameworks/preact-detector.js";
+import { detectLit } from "../detectors/frameworks/lit-detector.js";
+import { detectStencil } from "../detectors/frameworks/stencil-detector.js";
+import { detectEmber } from "../detectors/frameworks/ember-detector.js";
+import { detectKnockout } from "../detectors/frameworks/knockout-detector.js";
+import { detectWordPress } from "../detectors/cms/wordpress-detector.js";
+import { detectShopify } from "../detectors/cms/shopify-detector.js";
+import { detectWix } from "../detectors/cms/wix-detector.js";
+import { detectSquarespace } from "../detectors/cms/squarespace-detector.js";
+import { detectWebflow } from "../detectors/cms/webflow-detector.js";
+import { detectJoomla } from "../detectors/cms/joomla-detector.js";
 
 function runDetection() {
   const pageData = {
@@ -29,10 +49,27 @@ function runDetection() {
     detectNext(pageData),
     detectNuxt(pageData),
     detectAstro(pageData),
+    detectSvelte(pageData),
+    detectSolid(pageData),
+    detectRemix(pageData),
+    detectGatsby(pageData),
+    detectAlpine(pageData),
+    detectQwik(pageData),
+    detectPreact(pageData),
+    detectLit(pageData),
+    detectStencil(pageData),
+    detectEmber(pageData),
+    detectKnockout(pageData),
     detectTailwind(pageData),
     detectBootstrap(pageData),
     detectAngularMaterial(pageData),
     detectJQuery(pageData),
+    detectWordPress(pageData),
+    detectShopify(pageData),
+    detectWix(pageData),
+    detectSquarespace(pageData),
+    detectWebflow(pageData),
+    detectJoomla(pageData),
   ];
 
   const scoredResults = results.map((result) => {
@@ -45,9 +82,64 @@ function runDetection() {
     };
   });
 
+  const finalResults = [...scoredResults];
+
+  const hasNext = finalResults.find((r) => r.name === "Next.js" && r.detected);
+  const hasNuxt = finalResults.find((r) => r.name === "Nuxt" && r.detected);
+  const hasAstro = finalResults.find((r) => r.name === "Astro" && r.detected);
+  const hasRemix = finalResults.find((r) => r.name === "Remix" && r.detected);
+  const hasGatsby = finalResults.find((r) => r.name === "Gatsby" && r.detected);
+
+  if (hasNext) {
+    const react = finalResults.find((r) => r.name === "React");
+    if (react) {
+      react.detected = false;
+      react.note = "Handled by Next.js";
+    }
+  }
+
+  if (hasNuxt) {
+    const vue = finalResults.find((r) => r.name === "Vue");
+    if (vue) {
+      vue.detected = false;
+      vue.note = "Handled by Nuxt";
+    }
+  }
+
+  if (hasAstro) {
+    const react = finalResults.find((r) => r.name === "React");
+    const vue = finalResults.find((r) => r.name === "Vue");
+
+    if (react) {
+      react.detected = false;
+      react.note = "Handled by Astro";
+    }
+
+    if (vue) {
+      vue.detected = false;
+      vue.note = "Handled by Astro";
+    }
+  }
+
+  if (hasRemix) {
+    const react = finalResults.find((r) => r.name === "React");
+    if (react) {
+      react.detected = false;
+      react.note = "Handled by Remix";
+    }
+  }
+
+  if (hasGatsby) {
+    const react = finalResults.find((r) => r.name === "React");
+    if (react) {
+      react.detected = false;
+      react.note = "Handled by Gatsby";
+    }
+  }
+
   chrome.runtime.sendMessage({
     type: "STORE_STACK_RESULTS",
-    data: scoredResults,
+    data: finalResults,
   });
 }
 
