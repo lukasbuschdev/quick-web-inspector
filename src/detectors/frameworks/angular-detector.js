@@ -1,61 +1,65 @@
 export function detectAngular(pageData) {
   const evidence = [];
-  const angularComponentTags = pageData.dom.tags.filter((tag) => tag.includes("-") && !tag.startsWith("ION-") && !tag.startsWith("SL-") && !tag.startsWith("MUI-"));
 
-  if (angularComponentTags.length >= 3) {
-    evidence.push({
-      type: "medium",
-      message: "Found multiple custom component tags typical of Angular apps",
-    });
-  }
+  const html = pageData.dom.html;
 
-  if (pageData.dom.hasNgVersion) {
-    evidence.push({
-      type: "strong",
-      message: "Found ng-version attribute in DOM",
-    });
-  }
+  const hasNgVersion = pageData.dom.hasNgVersion;
 
-  if (pageData.dom.hasNgServerContext) {
-    evidence.push({
-      type: "strong",
-      message: "Found Angular SSR marker (ng-server-context)",
-    });
-  }
+  const hasScopedAttributes = pageData.dom.angularScopedAttributes.length > 0;
 
-  if (pageData.dom.ngReflectAttributes.length > 0) {
-    evidence.push({
-      type: "medium",
-      message: "Found ng-reflect attributes in DOM",
-    });
-  }
+  const hasNgServerContext = pageData.dom.hasNgServerContext;
 
-  if (pageData.dom.angularScopedAttributes.length > 0) {
+  const hasNgReflect = pageData.dom.ngReflectAttributes.length > 0;
+
+  const hasAngularGlobal = typeof window.ng !== "undefined";
+
+  const hasAngularScript = pageData.scripts.srcList.some((src) => /@angular|angular(\.min)?\.js/i.test(src));
+
+  if (hasNgVersion) {
     evidence.push({
       type: "strong",
-      message: "Found Angular scoped attributes (_ngcontent or _nghost)",
+      message: "Found ng-version attribute",
     });
   }
 
-  if (pageData.globals.hasNg) {
+  if (hasScopedAttributes) {
+    evidence.push({
+      type: "strong",
+      message: "Found Angular scoped attributes (_ngcontent/_nghost)",
+    });
+  }
+
+  if (hasNgServerContext) {
+    evidence.push({
+      type: "strong",
+      message: "Found Angular SSR marker",
+    });
+  }
+
+  if (hasNgReflect && hasScopedAttributes) {
     evidence.push({
       type: "medium",
-      message: "Found Angular global (window.ng)",
+      message: "Found Angular dev-mode bindings",
     });
   }
 
-  const angularRootTags = pageData.dom.tags.filter((tag) => tag === "APP-ROOT" || tag.startsWith("APP-"));
-
-  if (angularRootTags.length > 0) {
+  if (hasAngularGlobal && hasAngularScript) {
     evidence.push({
-      type: "weak",
-      message: "Found Angular-style root component tag",
+      type: "medium",
+      message: "Found Angular global with script",
     });
   }
+
+  const score = evidence.reduce((acc, e) => {
+    if (e.type === "strong") return acc + 3;
+    if (e.type === "medium") return acc + 2;
+    return acc + 1;
+  }, 0);
 
   return {
     name: "Angular",
-    detected: evidence.some((item) => item.type === "strong" || item.type === "medium"),
+    detected: score >= 3,
+    confidence: Math.min(score / 6, 1),
     evidence,
   };
 }

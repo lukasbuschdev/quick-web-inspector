@@ -1,14 +1,24 @@
 export function detectReact(pageData) {
   const evidence = [];
 
-  if (pageData.globals.hasReactDevtoolsHook) {
+  const html = pageData.dom.html;
+
+  const hasDevtoolsHook = pageData.globals.hasReactDevtoolsHook;
+
+  const hasFiberMarkers = html.includes("__reactFiber") || html.includes("__reactProps") || html.includes("__reactContainer");
+
+  const hasReactRootAPI = pageData.scripts.content?.some((content) => content.includes("createRoot(") || content.includes("hydrateRoot("));
+
+  const hasLegacyReactDOM = html.includes("data-reactroot") || html.includes("data-reactid");
+
+  const hasReactScript = pageData.scripts.srcList.some((src) => /react(-dom)?(\.production|\.development)?(\.min)?\.js/i.test(src));
+
+  if (hasDevtoolsHook) {
     evidence.push({
       type: "strong",
       message: "Found React DevTools hook",
     });
   }
-
-  const hasFiberMarkers = pageData.dom.html.includes("__reactFiber") || pageData.dom.html.includes("__reactProps") || pageData.dom.html.includes("__reactContainer");
 
   if (hasFiberMarkers) {
     evidence.push({
@@ -17,51 +27,17 @@ export function detectReact(pageData) {
     });
   }
 
-  if (pageData.scripts.hasReactRoot) {
-    evidence.push({
-      type: "medium",
-      message: "Found React root rendering pattern",
-    });
-  }
-
-  if (pageData.scripts.content?.some((content) => content.includes("createRoot(") || content.includes("hydrateRoot("))) {
-    evidence.push({
-      type: "medium",
-      message: "Found React 18 root API usage",
-    });
-  }
-
-  const hasReactAttributes = pageData.dom.html.includes("data-reactroot") || pageData.dom.html.includes("data-reactid");
-
-  if (hasReactAttributes) {
-    evidence.push({
-      type: "medium",
-      message: "Found React DOM attributes",
-    });
-  }
-
-  const reactScriptMatches = pageData.scripts.srcList.filter((src) => /react(?:\.production|\.development)?(?:\.min)?\.js/i.test(src) || /react-dom(?:\.production|\.development)?(?:\.min)?\.js/i.test(src) || /\/react@[\d.]+/i.test(src));
-
-  if (reactScriptMatches.length > 0) {
-    evidence.push({
-      type: "weak",
-      message: "Found React script reference",
-    });
-  }
-
-  const hasReactBundleHints = pageData.scripts.content?.some((content) => content.includes("useState(") || content.includes("useEffect(") || content.includes("useContext("));
-
-  if (hasReactBundleHints) {
-    evidence.push({
-      type: "medium",
-      message: "Found React hook usage in bundle",
-    });
-  }
-
-  if (pageData.dom.html.includes("__NEXT_DATA__") || pageData.dom.html.includes("next-route-announcer")) {
+  if (hasReactRootAPI && hasReactScript) {
     evidence.push({
       type: "strong",
-      message: "Found Next.js (React framework)",
+      message: "Found React root API with script",
+    });
+  }
+
+  if (hasLegacyReactDOM && hasReactScript) {
+    evidence.push({
+      type: "medium",
+      message: "Found legacy React DOM attributes with script",
     });
   }
 
@@ -74,7 +50,7 @@ export function detectReact(pageData) {
   return {
     name: "React",
     detected: score >= 3,
-    confidence: Math.min(score / 8, 1),
+    confidence: Math.min(score / 6, 1),
     evidence,
   };
 }

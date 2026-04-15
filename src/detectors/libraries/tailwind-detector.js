@@ -1,38 +1,50 @@
 export function detectTailwind(pageData) {
   const evidence = [];
 
-  const tailwindMatches = pageData.dom.classList.filter(
-    (className) =>
-      /^(sm:|md:|lg:|xl:|2xl:|hover:|focus:|active:|disabled:|dark:|group-hover:|peer-focus:|first:|last:|odd:|even:|motion-safe:|motion-reduce:|supports-\[.+\]:|aria-\[.+\]:|data-\[.+\]:|min-\[.+\]:|max-\[.+\]:)/.test(className) ||
-      /^(from|via|to)-[a-z]+-\d{2,3}$/.test(className) ||
-      /^(ring|ring-offset|divide|space-[xy])-[a-z0-9/-]+$/.test(className) ||
-      /^(aspect|line-clamp|backdrop|object|place|justify-self|self|content|items|auto-cols|auto-rows)-/.test(className),
-  );
+  const classes = pageData.dom.classList;
 
-  if (tailwindMatches.length >= 2) {
+  const variantMatches = classes.filter((c) => /^(sm:|md:|lg:|xl:|2xl:|hover:|focus:|active:|dark:|group-hover:|peer-focus:)/.test(c));
+
+  const utilityMatches = classes.filter((c) => /^(bg|text|border|p|px|py|m|mx|my|w|h|min-w|min-h|max-w|max-h|rounded|shadow|z)-/.test(c));
+
+  const arbitraryMatches = classes.filter((c) => /^(w|h|bg|text|p|m)-\[[^\]]+\]/.test(c));
+
+  const hasTailwindCDN = pageData.scripts.srcList.some((src) => src.includes("cdn.tailwindcss.com"));
+
+  const strongCombination = variantMatches.length >= 2 && utilityMatches.length >= 4;
+
+  const strongArbitrary = arbitraryMatches.length >= 2;
+
+  if (strongCombination) {
     evidence.push({
-      type: "medium",
-      message: "Found multiple Tailwind-specific utility classes",
+      type: "strong",
+      message: "Found multiple Tailwind variants with utilities",
     });
-  } else if (tailwindMatches.length === 1) {
+  }
+
+  if (strongArbitrary && utilityMatches.length >= 2) {
     evidence.push({
-      type: "weak",
-      message: "Found a Tailwind-specific utility class",
+      type: "strong",
+      message: "Found Tailwind arbitrary values with utilities",
     });
   }
 
-  const hasTailwindInScripts = pageData.scripts.srcList.some((src) => /tailwind/i.test(src));
-
-  if (hasTailwindInScripts) {
+  if (hasTailwindCDN) {
     evidence.push({
-      type: "medium",
-      message: "Found Tailwind-related script URL",
+      type: "strong",
+      message: "Found Tailwind CDN",
     });
   }
+
+  const score = evidence.reduce((acc, e) => {
+    if (e.type === "strong") return acc + 3;
+    return acc + 1;
+  }, 0);
 
   return {
     name: "Tailwind CSS",
-    detected: evidence.some((item) => item.type === "strong" || item.type === "medium"),
+    detected: score >= 3,
+    confidence: Math.min(score / 6, 1),
     evidence,
   };
 }

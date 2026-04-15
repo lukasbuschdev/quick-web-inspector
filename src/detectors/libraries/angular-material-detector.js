@@ -1,36 +1,56 @@
 export function detectAngularMaterial(pageData) {
   const evidence = [];
 
-  const hasMatTags = pageData.dom.tags.some((tag) => tag.startsWith("MAT-"));
+  const html = pageData.dom.html;
 
-  if (hasMatTags) {
+  const hasAngularMarkers = html.includes("_ngcontent-") || html.includes("_nghost-") || html.includes("ng-version");
+
+  const hasMaterialComponents = pageData.dom.tags.some((tag) => tag.startsWith("mat-"));
+
+  if (hasMaterialComponents && hasAngularMarkers) {
     evidence.push({
       type: "strong",
-      message: "Found Angular Material component tags",
+      message: "Found Angular Material components with Angular markers",
     });
   }
 
-  const hasMaterialClasses = pageData.dom.classList.some((className) => className.startsWith("mat-") || className.startsWith("mdc-"));
+  const hasMaterialClasses = pageData.dom.classList.some((className) => className.startsWith("mat-"));
 
-  if (hasMaterialClasses) {
+  if (hasMaterialClasses && hasAngularMarkers) {
     evidence.push({
       type: "medium",
-      message: "Found Angular Material related classes",
+      message: "Found Angular Material classes with Angular context",
     });
   }
 
-  const hasMaterialInScripts = pageData.scripts.srcList.some((src) => src.toLowerCase().includes("material"));
+  const hasMdcClasses = pageData.dom.classList.some((className) => className.startsWith("mdc-"));
 
-  if (hasMaterialInScripts) {
+  if (hasMdcClasses && hasMaterialComponents) {
     evidence.push({
-      type: "weak",
-      message: "Found Angular Material related script URL",
+      type: "medium",
+      message: "Found MDC classes with Material components",
     });
   }
+
+  const hasMaterialScripts = pageData.scripts.srcList.some((src) => src.includes("@angular/material") || src.includes("angular-material"));
+
+  if (hasMaterialScripts) {
+    evidence.push({
+      type: "medium",
+      message: "Found Angular Material script reference",
+    });
+  }
+
+  const score = evidence.reduce((acc, e) => {
+    if (e.type === "strong") return acc + 3;
+    if (e.type === "medium") return acc + 2;
+    return acc + 1;
+  }, 0);
 
   return {
     name: "Angular Material",
-    detected: evidence.length > 0,
+    detected: score >= 3,
+    confidence: Math.min(score / 6, 1),
     evidence,
   };
 }

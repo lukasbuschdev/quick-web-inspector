@@ -3,36 +3,37 @@ export function detectShopify(pageData) {
 
   const html = pageData.dom.html;
 
-  const hasShopifyCDN = html.includes("cdn.shopify.com");
+  const hasShopifyCDN = html.includes("cdn.shopify.com") || html.includes("/cdn/shop/");
 
-  if (hasShopifyCDN) {
+  const hasShopifyGlobal = typeof window.Shopify !== "undefined" && typeof window.Shopify === "object";
+
+  const hasShopifyRuntime = typeof window.Shopify?.theme !== "undefined" || typeof window.Shopify?.shop !== "undefined";
+
+  const hasShopifyScript = pageData.scripts.srcList.some((src) => /cdn\.shopify\.com/i.test(src));
+
+  if (hasShopifyGlobal && hasShopifyRuntime) {
     evidence.push({
       type: "strong",
-      message: "Found Shopify CDN",
+      message: "Found Shopify global with runtime properties",
     });
   }
 
-  const hasShopifyGlobal = !!window.Shopify;
-
-  if (hasShopifyGlobal) {
+  if (hasShopifyCDN && hasShopifyScript) {
     evidence.push({
       type: "strong",
-      message: "Found Shopify global",
+      message: "Found Shopify CDN with script",
     });
   }
 
-  const hasShopifyRoutes = html.includes("/products/") || html.includes("/collections/");
-
-  if (hasShopifyRoutes) {
+  if (hasShopifyGlobal && hasShopifyCDN) {
     evidence.push({
-      type: "medium",
-      message: "Found Shopify URL patterns",
+      type: "strong",
+      message: "Found Shopify global with CDN",
     });
   }
 
   const score = evidence.reduce((acc, e) => {
     if (e.type === "strong") return acc + 3;
-    if (e.type === "medium") return acc + 2;
     return acc + 1;
   }, 0);
 

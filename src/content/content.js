@@ -12,13 +12,6 @@ import { detectAstro } from "../detectors/frameworks/astro-detector.js";
 import { detectSvelte } from "../detectors/frameworks/svelte-detector.js";
 import { detectSolid } from "../detectors/frameworks/solid-detector.js";
 import { detectRemix } from "../detectors/frameworks/remix-detector.js";
-
-import { detectTailwind } from "../detectors/libraries/tailwind-detector.js";
-import { detectBootstrap } from "../detectors/libraries/bootstrap-detector.js";
-import { detectAngularMaterial } from "../detectors/libraries/angular-material-detector.js";
-import { detectJQuery } from "../detectors/libraries/jquery-detector.js";
-
-import { evaluateDetection } from "../scoring/confidence-engine.js";
 import { detectGatsby } from "../detectors/frameworks/gatsby-detector.js";
 import { detectAlpine } from "../detectors/frameworks/alpine-detector.js";
 import { detectQwik } from "../detectors/frameworks/qwik-detector.js";
@@ -27,12 +20,25 @@ import { detectLit } from "../detectors/frameworks/lit-detector.js";
 import { detectStencil } from "../detectors/frameworks/stencil-detector.js";
 import { detectEmber } from "../detectors/frameworks/ember-detector.js";
 import { detectKnockout } from "../detectors/frameworks/knockout-detector.js";
+
+import { detectTailwind } from "../detectors/libraries/tailwind-detector.js";
+import { detectBootstrap } from "../detectors/libraries/bootstrap-detector.js";
+import { detectAngularMaterial } from "../detectors/libraries/angular-material-detector.js";
+import { detectJQuery } from "../detectors/libraries/jquery-detector.js";
+import { detectGSAP } from "../detectors/libraries/gsap-detector.js";
+import { detectThree } from "../detectors/libraries/three-detector.js";
+import { detectSwiper } from "../detectors/libraries/swiper-detector.js";
+import { detectAOS } from "../detectors/libraries/aos-detector.js";
+import { detectChartJS } from "../detectors/libraries/chart-detector.js";
+
 import { detectWordPress } from "../detectors/cms/wordpress-detector.js";
 import { detectShopify } from "../detectors/cms/shopify-detector.js";
 import { detectWix } from "../detectors/cms/wix-detector.js";
 import { detectSquarespace } from "../detectors/cms/squarespace-detector.js";
 import { detectWebflow } from "../detectors/cms/webflow-detector.js";
 import { detectJoomla } from "../detectors/cms/joomla-detector.js";
+
+import { evaluateDetection } from "../scoring/confidence-engine.js";
 
 function runDetection() {
   const pageData = {
@@ -64,6 +70,11 @@ function runDetection() {
     detectBootstrap(pageData),
     detectAngularMaterial(pageData),
     detectJQuery(pageData),
+    detectGSAP(pageData),
+    detectThree(pageData),
+    detectSwiper(pageData),
+    detectAOS(pageData),
+    detectChartJS(pageData),
     detectWordPress(pageData),
     detectShopify(pageData),
     detectWix(pageData),
@@ -89,6 +100,14 @@ function runDetection() {
   const hasAstro = finalResults.find((r) => r.name === "Astro" && r.detected);
   const hasRemix = finalResults.find((r) => r.name === "Remix" && r.detected);
   const hasGatsby = finalResults.find((r) => r.name === "Gatsby" && r.detected);
+  const hasAngular = finalResults.find((r) => r.name === "Angular" && r.detected);
+
+  if (!hasAngular) {
+    const mat = finalResults.find((r) => r.name === "Angular Material");
+    if (mat) {
+      mat.detected = false;
+    }
+  }
 
   if (hasNext) {
     const react = finalResults.find((r) => r.name === "React");

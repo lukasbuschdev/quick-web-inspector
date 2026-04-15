@@ -3,30 +3,32 @@ export function detectEmber(pageData) {
 
   const html = pageData.dom.html;
 
-  const hasEmberGlobal = !!window.Ember;
-
-  if (hasEmberGlobal) {
-    evidence.push({
-      type: "strong",
-      message: "Found Ember global",
-    });
-  }
+  const hasEmberGlobal = typeof window.Ember !== "undefined" && typeof window.Ember === "object";
 
   const hasEmberDOM = html.includes("ember-view") || html.includes("data-ember-action");
 
-  if (hasEmberDOM) {
+  const hasEmberRuntime = pageData.scripts.content?.some((content) => content.includes("Ember.Application") || content.includes("Ember.Component") || content.includes("Ember.Route"));
+
+  const hasEmberScript = pageData.scripts.srcList.some((src) => /ember(\.min)?\.js/i.test(src));
+
+  if (hasEmberGlobal && hasEmberDOM) {
     evidence.push({
       type: "strong",
-      message: "Found Ember DOM markers",
+      message: "Found Ember global with DOM markers",
     });
   }
 
-  const hasEmberScripts = pageData.scripts.srcList.some((src) => src.toLowerCase().includes("ember"));
+  if (hasEmberDOM && hasEmberRuntime) {
+    evidence.push({
+      type: "strong",
+      message: "Found Ember DOM with runtime usage",
+    });
+  }
 
-  if (hasEmberScripts) {
+  if (hasEmberScript && hasEmberRuntime) {
     evidence.push({
       type: "medium",
-      message: "Found Ember script",
+      message: "Found Ember script with runtime usage",
     });
   }
 

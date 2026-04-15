@@ -1,36 +1,58 @@
 export function detectBootstrap(pageData) {
   const evidence = [];
 
-  const hasBootstrapInScripts = pageData.scripts.srcList.some((src) => src.toLowerCase().includes("bootstrap"));
+  const classes = pageData.dom.classList;
+  const html = pageData.dom.html;
 
-  if (hasBootstrapInScripts) {
+  const hasBootstrapJS = html.includes("data-bs-toggle") || html.includes("data-bs-target") || html.includes("data-bs-dismiss");
+
+  const hasBootstrapScript = pageData.scripts.srcList.some((src) => /bootstrap(\.bundle)?(\.min)?\.js/i.test(src));
+
+  const hasBtnCombo = classes.includes("btn") && classes.some((c) => /^btn-(primary|secondary|success|danger|warning|info|light|dark)$/.test(c));
+
+  const hasNavbarCombo = classes.includes("navbar") && classes.some((c) => /^navbar-(expand|dark|light)/.test(c));
+
+  const hasModalCombo = classes.includes("modal") && classes.includes("fade");
+
+  const hasDropdownCombo = classes.includes("dropdown-menu") && classes.includes("dropdown-item");
+
+  if (hasBootstrapJS && hasBootstrapScript) {
     evidence.push({
-      type: "medium",
-      message: "Found Bootstrap-related script URL",
+      type: "strong",
+      message: "Found Bootstrap JS attributes with script",
     });
   }
 
-  const bootstrapMatches = pageData.dom.classList.filter((className) =>
-    /^(btn-(primary|secondary|success|danger|warning|info|light|dark|link)|navbar-(expand|dark|light)|col-(sm|md|lg|xl|xxl)-\d+|row-cols-\d+|dropdown-menu|dropdown-item|form-control|form-select|input-group|input-group-text|modal-dialog|modal-content|offcanvas|accordion-item|accordion-button|alert-(primary|secondary|success|danger|warning|info|light|dark)|badge-(primary|secondary|success|danger|warning|info|light|dark)|text-bg-(primary|secondary|success|danger|warning|info|light|dark)|spinner-(border|grow)|placeholder-glow|placeholder-wave)$/.test(
-      className,
-    ),
-  );
-
-  if (bootstrapMatches.length >= 3) {
+  if (hasBtnCombo && hasNavbarCombo) {
     evidence.push({
-      type: "medium",
-      message: "Found multiple Bootstrap-specific class patterns",
-    });
-  } else if (bootstrapMatches.length === 2) {
-    evidence.push({
-      type: "weak",
-      message: "Found a couple of Bootstrap-like class patterns",
+      type: "strong",
+      message: "Found Bootstrap button and navbar combination",
     });
   }
+
+  if (hasModalCombo && hasBootstrapScript) {
+    evidence.push({
+      type: "strong",
+      message: "Found Bootstrap modal with script",
+    });
+  }
+
+  if (hasDropdownCombo && hasBootstrapScript) {
+    evidence.push({
+      type: "strong",
+      message: "Found Bootstrap dropdown with script",
+    });
+  }
+
+  const score = evidence.reduce((acc, e) => {
+    if (e.type === "strong") return acc + 3;
+    return acc + 1;
+  }, 0);
 
   return {
     name: "Bootstrap",
-    detected: evidence.length > 0,
+    detected: score >= 3,
+    confidence: Math.min(score / 6, 1),
     evidence,
   };
 }
