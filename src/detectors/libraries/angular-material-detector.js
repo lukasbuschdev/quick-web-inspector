@@ -7,25 +7,26 @@ export function detectAngularMaterial(pageData) {
   const hasMaterialClasses = pageData.dom.classList.some((className) => className.startsWith("mat-"));
   const hasMdcClasses = pageData.dom.classList.some((className) => className.startsWith("mdc-"));
   const hasMaterialScripts = pageData.scripts.srcList.some((src) => src.includes("@angular/material") || src.includes("angular-material"));
+  const hasMatInDOM = html.includes("mat-");
 
-  if (hasMaterialComponents && hasAngularMarkers) {
+  if ((hasMaterialComponents || hasMatInDOM) && hasAngularMarkers) {
     evidence.push({
       type: "strong",
-      message: "Found Angular Material components with Angular markers",
+      message: "Found Angular Material DOM patterns with Angular context",
     });
   }
 
-  if (hasMaterialClasses && hasAngularMarkers) {
+  if (hasMaterialClasses) {
     evidence.push({
       type: "medium",
-      message: "Found Angular Material classes with Angular context",
+      message: "Found Angular Material classes",
     });
   }
 
-  if (hasMdcClasses && hasMaterialComponents) {
+  if (hasMdcClasses && (hasMaterialComponents || hasMatInDOM)) {
     evidence.push({
       type: "medium",
-      message: "Found MDC classes with Material components",
+      message: "Found MDC classes with Material patterns",
     });
   }
 

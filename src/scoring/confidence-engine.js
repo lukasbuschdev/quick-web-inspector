@@ -1,4 +1,4 @@
-export function evaluateDetection(evidence = []) {
+export function evaluateDetection(evidence = [], type = "other") {
   let score = 0;
   let hasDecisive = false;
 
@@ -23,8 +23,10 @@ export function evaluateDetection(evidence = []) {
     };
   }
 
+  const threshold = type === "library" ? 20 : type === "framework" || type === "cms" ? 30 : 30;
+
   return {
-    detected: score >= 30,
+    detected: score >= threshold,
     confidence: Math.min(score, 100),
   };
 }
