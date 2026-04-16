@@ -25,10 +25,11 @@ function runDetection() {
 
   const results = DETECTORS.map((detector) => detector(pageData));
   const renderingResult = results.find((r) => r.type === "rendering") || null;
+  const performanceResult = results.find((r) => r.type === "performance") || null;
   let cdnResult = results.find((r) => r.type === "infrastructure") || null;
 
   const scoredResults = results.map((result) => {
-    if (result.type === "rendering" || result.type === "infrastructure") {
+    if (result.type === "rendering" || result.type === "infrastructure" || result.type === "performance") {
       return result;
     }
 
@@ -48,7 +49,7 @@ function runDetection() {
     if (!r.type) r.type = "other";
   });
 
-  const stackResults = finalResults.filter((r) => r.type !== "rendering" && r.type !== "infrastructure");
+  const stackResults = finalResults.filter((r) => r.type !== "rendering" && r.type !== "infrastructure" && r.type !== "performance");
   const detected = stackResults.filter((r) => r.detected === true);
 
   const primary =
@@ -101,12 +102,12 @@ function runDetection() {
         });
       }
 
-      sendResults(primary, secondary, renderingResult, cdnResult);
+      sendResults(primary, secondary, renderingResult, cdnResult, performanceResult);
     });
   });
 }
 
-function sendResults(primary, secondary, renderingResult, cdnResult) {
+function sendResults(primary, secondary, renderingResult, cdnResult, performanceResult) {
   chrome.runtime.sendMessage({
     type: "STORE_STACK_RESULTS",
     data: {
@@ -114,6 +115,7 @@ function sendResults(primary, secondary, renderingResult, cdnResult) {
       secondary: primary ? secondary : [],
       rendering: renderingResult,
       cdn: cdnResult,
+      performance: performanceResult,
     },
   });
 }
@@ -182,5 +184,4 @@ function applyFrameworkOverrides(results) {
 }
 
 runDetection();
-setTimeout(runDetection, 1500);
 setTimeout(runDetection, 3000);

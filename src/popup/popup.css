@@ -61,6 +61,42 @@ li {
   flex-direction: column;
 }
 
+.gap-10 {
+  gap: 10px;
+}
+
 .gap-20 {
   gap: 20px;
+}
+
+.gap-30 {
+  gap: 30px;
+}
+
+.white {
+  color: #ffffff !important;
+}
+
+.insight-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 20px;
+}
+
+.insight-group ul {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.insight-group.critical strong {
+  color: #f44336;
+}
+
+.insight-group.warning strong {
+  color: #ff9800;
+}
+
+.insight-group.good strong {
+  color: #4caf50;
 }
