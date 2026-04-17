@@ -15,7 +15,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
 });
 
 function renderResults(data) {
-  const { primary, secondary, rendering, cdn, performance, seo } = data || {};
+  const { primary, secondary, rendering, cdn, performance, seo, summary } = data || {};
   let html = "";
   const detectedTypes = [];
 
@@ -34,124 +34,56 @@ function renderResults(data) {
     hasLibrary,
   });
 
-  if (primary) {
-    const evidenceItems = (primary.evidence || []).map((item) => `<li>${item.message}</li>`).join("");
-    const baseInsights = primary.insights || [];
-    const allInsights = [...baseInsights, ...categoryInsights];
-    const insightsItems = allInsights.map((item) => `<li>${item}</li>`).join("");
+  if (summary) {
+    const { performanceScore, seoScore, overallScore, topIssues } = summary;
+    const levelPriority = {
+      critical: 2,
+      warning: 1,
+    };
 
-    html += `<div class="result-section"><strong>Primary Technologies</strong></div>`;
-    html += `
-      <div class="result-card primary column gap-20">
-        <div class="result-header">
-          <strong>[${formatType(primary.type)}] ${primary.name}</strong>
-          <strong>${primary.confidence}%</strong>
-        </div>
+    const sortedIssues = (topIssues || []).sort((a, b) => levelPriority[b.level] - levelPriority[a.level]).slice(0, 3);
+    const issuesList = sortedIssues.map((issue) => `<li><span class="${issue.level}">[${issue.source}]</span> ${issue.message}</li>`).join("");
 
-        <div class="column gap-20">
-          ${evidenceItems ? `<ul>${evidenceItems}</ul>` : `<p class="muted">No direct evidence found</p>`}
+    html += /*html*/ `
+      <div class="result-section"><strong>Summary</strong></div>
 
-          ${
-            insightsItems
-              ? `
-              <div class="insights column gap-20">
-                <strong>Analysis</strong>
-                <ul>${insightsItems}</ul>
-              </div>
-            `
-              : ""
-          }
-        </div>
-      </div>
-    `;
-  }
-
-  if (secondary && secondary.length > 0) {
-    html += `<div class="result-section"><strong>Secondary Technologies</strong></div>`;
-    html += secondary
-      .map((result) => {
-        const evidenceItems = (result.evidence || []).map((item) => `<li>${item.message}</li>`).join("");
-        const insightsItems = (result.insights || []).map((item) => `<li>${item}</li>`).join("");
-
-        return `
-          <div class="result-card column gap-20">
-            <div class="result-header">
-              <strong>[${formatType(result.type)}] ${result.name}</strong>
-              <strong>${result.confidence}%</strong>
-            </div>
-
-            ${evidenceItems ? `<ul>${evidenceItems}</ul>` : `<p class="muted">No direct evidence found</p>`}
-
-            ${
-              insightsItems
-                ? `
-                <div class="insights column gap-20">
-                  <strong>Analysis</strong>
-                  <ul>${insightsItems}</ul>
-                </div>
-              `
-                : ""
-            }
+      <div class="result-card column gap-20 summary">
+        <div class="summary-score">
+          <strong>Overall</strong>
+          <div class="row gap-5">
+            <span class="score ${getScoreClass(overallScore)}">${overallScore ?? "N/A"}</span>
+            <span class="white"><strong>/ 100</strong></span>
           </div>
-        `;
-      })
-      .join("");
-  }
-
-  if (!html) {
-    html = `
-      <div class="result-card column gap-20">
-        <div class="result-header">
-          <strong>Analysis</strong>
-        </div>
-        <span class="muted">
-          No detectable technologies. This site likely uses server-side rendering,
-          a custom framework, or heavily optimized production builds.
-        </span>
-      </div>
-    `;
-  }
-
-  if (rendering) {
-    const evidenceItems = (rendering.evidence || []).map((item) => `<li>${item.message}</li>`).join("");
-
-    html += `<div class="result-section"><strong>Rendering Strategy</strong></div>`;
-    html += `
-    <div class="result-card column gap-20">
-      <div class="result-header">
-        <strong>${formatRenderingStrategy(rendering.strategy)}</strong>
-        <strong>${rendering.confidence}%</strong>
-      </div>
-
-      ${evidenceItems ? `<ul>${evidenceItems}</ul>` : `<span class="muted">No clear rendering evidence found</span>`}
-    </div>
-  `;
-  }
-
-  if (cdn) {
-    const evidenceItems = (cdn.evidence || []).map((item) => `<li>${item.message}</li>`).join("");
-    const edge = cdn.edge ? `<span><strong>Edge:</strong> ${cdn.edge}</span>` : "";
-    const assets = cdn.assets && cdn.assets.length > 0 ? `<span><strong>Assets:</strong> ${cdn.assets.join(", ")}</span>` : "";
-    const source = cdn.source === "headers" ? `<span><strong>Detected via:</strong> server headers</span>` : `<span><strong>Detected via:</strong> resource analysis</span>`;
-    const platform = cdn.platform ? `<span><strong>Platform:</strong> ${cdn.platform}</span>` : "";
-
-    html += `<div class="result-section"><strong>Delivery & Hosting</strong></div>`;
-
-    html += `
-      <div class="result-card column gap-20">
-        <div class="result-header">
-          <strong>${cdn.edge || cdn.platform || (cdn.assets.length > 0 ? "Asset CDN detected" : "No CDN detected")}</strong>
-          <strong>${cdn.confidence}%</strong>
         </div>
 
-        <div class="column gap-20">
-          ${source}
-          ${edge}
-          ${platform}
-          ${assets}
+        <div class="summary-breakdown column gap-20">
+          <div class="row gap-10">
+            <span><strong class="white">Performance:</strong></span>
+            <div class="row gap-5">
+              <span class="score ${getScoreClass(performanceScore)}">${performanceScore ?? "N/A"}</span>
+              <span class="white"><strong>/ 100</strong></span>
+            </div>
+          </div>
+
+          <div class="row gap-10">
+            <span><strong class="white">SEO:</strong></span>
+            <div class="row gap-5">
+              <span class="score ${getScoreClass(seoScore)}">${seoScore ?? "N/A"}</span>
+              <span class="white"><strong>/ 100</strong></span>
+            </div>
+          </div>
         </div>
 
-        ${evidenceItems ? `<ul>${evidenceItems}</ul>` : `<span class="muted">No clear CDN evidence found</span>`}
+        ${
+          issuesList
+            ? /*html*/ `
+            <div class="insights column gap-10">
+              <strong>Top Issues</strong>
+              <ul>${issuesList}</ul>
+            </div>
+          `
+            : ""
+        }
       </div>
     `;
   }
@@ -186,8 +118,8 @@ function renderResults(data) {
       ${buildPerformanceInsightGroup("Good Signals", groupedInsights.good, "good")}
     `;
 
-    html += `<div class="result-section"><strong>Performance</strong></div>`;
-    html += `
+    html += /*html*/ `<div class="result-section"><strong>Performance</strong></div>`;
+    html += /*html*/ `
       <div class="result-card column gap-30">
         <div class="column gap-10">
           <span class="white"><strong>Core Web Vitals</strong></span>
@@ -210,7 +142,7 @@ function renderResults(data) {
 
         ${
           insightsItems
-            ? `
+            ? /*html*/ `
               <div class="insights column gap-10">
                 <strong>Analysis</strong>
                 <ul>${insightsItems}</ul>
@@ -244,7 +176,7 @@ function renderResults(data) {
     `;
 
     const titleField = title ? `<span><strong>Title:</strong> ${truncateUrl(title, 50)}</span>` : `<span class="muted">Title: missing</span>`;
-    const descriptionField = description ? `<span><strong>Description:</strong> ${truncateUrl(description, 80)}</span>` : `<span class="muted">Description: missing</span>`;
+    const descriptionField = description ? `<span><strong>Description:</strong> ${truncateUrl(description, 70)}</span>` : `<span class="muted">Description: missing</span>`;
     const h1Field = `<span><strong>H1:</strong> ${headings?.h1 ?? 0}</span>`;
     const h2Field = `<span><strong>H2:</strong> ${headings?.h2 ?? 0}</span>`;
     const imgField = `<span><strong>Images:</strong> ${images?.total ?? 0} (${images?.missingAlt ?? 0} missing alt)</span>`;
@@ -254,8 +186,8 @@ function renderResults(data) {
     const ogField = `<span><strong>Open Graph:</strong> ${meta?.openGraph ?? 0}</span>`;
     const twitterField = `<span><strong>Twitter:</strong> ${meta?.twitter ?? 0}</span>`;
 
-    html += `<div class="result-section"><strong>SEO</strong></div>`;
-    html += `
+    html += /*html*/ `<div class="result-section"><strong>SEO</strong></div>`;
+    html += /*html*/ `
       <div class="result-card column gap-30">
         <div class="column gap-10">
           <span class="white"><strong>Structure</strong></span>
@@ -281,7 +213,7 @@ function renderResults(data) {
 
         ${
           insightsItems
-            ? `
+            ? /*html*/ `
             <div class="insights column gap-10">
               <span class="white"><strong>Analysis</strong></span>
               <ul>${insightsItems}</ul>
@@ -289,6 +221,127 @@ function renderResults(data) {
           `
             : ""
         }
+      </div>
+    `;
+  }
+
+  if (primary) {
+    const evidenceItems = (primary.evidence || []).map((item) => `<li>${item.message}</li>`).join("");
+    const baseInsights = primary.insights || [];
+    const allInsights = [...baseInsights, ...categoryInsights];
+    const insightsItems = allInsights.map((item) => `<li>${item}</li>`).join("");
+
+    html += /*html*/ `<div class="result-section"><strong>Primary Technologies</strong></div>`;
+    html += /*html*/ `
+      <div class="result-card primary column gap-20">
+        <div class="result-header">
+          <strong>[${formatType(primary.type)}] ${primary.name}</strong>
+          <strong>${primary.confidence}%</strong>
+        </div>
+
+        <div class="column gap-20">
+          ${evidenceItems ? `<ul>${evidenceItems}</ul>` : `<p class="muted">No direct evidence found</p>`}
+
+          ${
+            insightsItems
+              ? /*html*/ `
+              <div class="insights column gap-20">
+                <strong>Analysis</strong>
+                <ul>${insightsItems}</ul>
+              </div>
+            `
+              : ""
+          }
+        </div>
+      </div>
+    `;
+  }
+
+  if (secondary && secondary.length > 0) {
+    html += /*html*/ `<div class="result-section"><strong>Secondary Technologies</strong></div>`;
+    html += secondary
+      .map((result) => {
+        const evidenceItems = (result.evidence || []).map((item) => `<li>${item.message}</li>`).join("");
+        const insightsItems = (result.insights || []).map((item) => `<li>${item}</li>`).join("");
+
+        return /*html*/ `
+          <div class="result-card column gap-20">
+            <div class="result-header">
+              <strong>[${formatType(result.type)}] ${result.name}</strong>
+              <strong>${result.confidence}%</strong>
+            </div>
+
+            ${evidenceItems ? `<ul>${evidenceItems}</ul>` : `<span class="muted">No direct evidence found</span>`}
+
+            ${
+              insightsItems
+                ? /*html*/ `
+                <div class="insights column gap-20">
+                  <strong>Analysis</strong>
+                  <ul>${insightsItems}</ul>
+                </div>
+              `
+                : ""
+            }
+          </div>
+        `;
+      })
+      .join("");
+  }
+
+  if (!html) {
+    html = /*html*/ `
+      <div class="result-card column gap-20">
+        <div class="result-header">
+          <strong>Analysis</strong>
+        </div>
+        <span class="muted">
+          No detectable technologies. This site likely uses server-side rendering,
+          a custom framework, or heavily optimized production builds.
+        </span>
+      </div>
+    `;
+  }
+
+  if (rendering) {
+    const evidenceItems = (rendering.evidence || []).map((item) => `<li>${item.message}</li>`).join("");
+
+    html += /*html*/ `<div class="result-section"><strong>Rendering Strategy</strong></div>`;
+    html += /*html*/ `
+    <div class="result-card column gap-20">
+      <div class="result-header">
+        <strong>${formatRenderingStrategy(rendering.strategy)}</strong>
+        <strong>${rendering.confidence}%</strong>
+      </div>
+
+      ${evidenceItems ? `<ul>${evidenceItems}</ul>` : `<span class="muted">No clear rendering evidence found</span>`}
+    </div>
+  `;
+  }
+
+  if (cdn) {
+    const evidenceItems = (cdn.evidence || []).map((item) => `<li>${item.message}</li>`).join("");
+    const edge = cdn.edge ? `<span><strong>Edge:</strong> ${cdn.edge}</span>` : "";
+    const assets = cdn.assets && cdn.assets.length > 0 ? `<span><strong>Assets:</strong> ${cdn.assets.join(", ")}</span>` : "";
+    const source = cdn.source === "headers" ? `<span><strong>Detected via:</strong> server headers</span>` : `<span><strong>Detected via:</strong> resource analysis</span>`;
+    const platform = cdn.platform ? `<span><strong>Platform:</strong> ${cdn.platform}</span>` : "";
+
+    html += /*html*/ `<div class="result-section"><strong>Delivery & Hosting</strong></div>`;
+    html += /*html*/ `
+      <div class="result-card column gap-20">
+        <div class="result-header">
+          <strong>${cdn.edge || cdn.platform || (cdn.assets.length > 0 ? "Asset CDN detected" : "No CDN detected")}</strong>
+          <strong>${cdn.confidence}%</strong>
+        </div>
+
+        <div class="column gap-20">
+          ${source}
+          ${edge}
+          ${platform}
+          ${assets}
+        </div>
+
+        ${evidenceItems ? `<ul>${evidenceItems}</ul>` : `<span class="muted">No clear CDN evidence found</span>`}
       </div>
     `;
   }
@@ -334,7 +387,7 @@ function buildCategoryInsights({ hasFramework, hasCMS, hasLibrary }) {
 function buildPerformanceInsightGroup(title, items, className) {
   if (!items.length) return "";
 
-  return `
+  return /*html*/ `
     <div class="insight-group ${className}">
       <strong>${title}</strong>
       <ul>
@@ -347,9 +400,9 @@ function buildPerformanceInsightGroup(title, items, className) {
 function buildSeoInsightGroup(title, items, className) {
   if (!items.length) return "";
 
-  return `
+  return /*html*/ `
     <div class="insight-group ${className}">
-      <strong>${title} (${items.length})</strong>
+      <strong>${title}</strong>
       <ul>
         ${items.map((msg) => `<li>${msg}</li>`).join("")}
       </ul>
@@ -381,6 +434,13 @@ function basename(url) {
 function truncateUrl(str, max = 40) {
   if (!str) return "";
   return str.length > max ? str.slice(0, max) + "..." : str;
+}
+
+function getScoreClass(score) {
+  if (score == null) return "";
+  if (score >= 85) return "good";
+  if (score >= 60) return "warning";
+  return "critical";
 }
 
 function initAutoRefresh(tabId) {

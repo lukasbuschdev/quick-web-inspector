@@ -28,6 +28,33 @@ function runDetection() {
   let cdnResult = results.find((r) => r.type === "infrastructure") || null;
   const performanceResult = results.find((r) => r.type === "performance") || null;
   const seoResult = results.find((r) => r.type === "seo") || null;
+  const performanceScore = performanceResult?.score ?? null;
+  const seoScore = seoResult?.score ?? null;
+
+  let overallScore = null;
+
+  if (performanceScore != null && seoScore != null) {
+    overallScore = Math.round((performanceScore + seoScore) / 2);
+  }
+
+  const levelPriority = {
+    critical: 2,
+    warning: 1,
+  };
+
+  const allIssues = [...(performanceResult?.insights || []), ...(seoResult?.insights || [])];
+
+  const topIssues = allIssues
+    .filter((i) => i.level === "critical" || i.level === "warning")
+    .sort((a, b) => levelPriority[b.level] - levelPriority[a.level])
+    .slice(0, 3);
+
+  const summary = {
+    performanceScore,
+    seoScore,
+    overallScore,
+    topIssues,
+  };
 
   const scoredResults = results.map((result) => {
     if (result.type === "rendering" || result.type === "infrastructure" || result.type === "performance" || result.type === "seo") {
@@ -63,6 +90,8 @@ function runDetection() {
   const secondary = detected.filter((r) => r !== primary).sort((a, b) => b.confidence - a.confidence);
   const hasMeaningfulDetection = detected.some((r) => r.confidence >= 30);
 
+  let fallback = null;
+
   if (!hasMeaningfulDetection) {
     fallback = {
       name: "Unknown Stack",
@@ -83,7 +112,7 @@ function runDetection() {
     const tabId = response?.tabId;
 
     if (!tabId) {
-      sendResults(primary, secondary, renderingResult, cdnResult, performanceResult, seoResult);
+      sendResults(primary, secondary, renderingResult, cdnResult, performanceResult, seoResult, summary);
       return;
     }
 
@@ -101,12 +130,12 @@ function runDetection() {
         });
       }
 
-      sendResults(primary, secondary, renderingResult, cdnResult, performanceResult, seoResult);
+      sendResults(primary, secondary, renderingResult, cdnResult, performanceResult, seoResult, summary);
     });
   });
 }
 
-function sendResults(primary, secondary, renderingResult, cdnResult, performanceResult, seoResult) {
+function sendResults(primary, secondary, renderingResult, cdnResult, performanceResult, seoResult, summary) {
   chrome.runtime.sendMessage({
     type: "STORE_STACK_RESULTS",
     data: {
@@ -116,6 +145,7 @@ function sendResults(primary, secondary, renderingResult, cdnResult, performance
       cdn: cdnResult,
       performance: performanceResult,
       seo: seoResult,
+      summary: summary,
     },
   });
 }

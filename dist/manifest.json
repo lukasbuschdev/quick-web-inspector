@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Stack Checker",
+  "name": "Quick Web Inspector",
   "version": "1.0.0",
-  "description": "Detects frontend frameworks and libraries with confidence levels",
+  "description": "Quickly analyze any website for performance, SEO, and technology stack with actionable insights and scores.",
 
   "action": {
     "default_popup": "src/popup/popup.html"

@@ -70,10 +70,19 @@ export function detectPerformance() {
     },
   });
 
+  const score = calculatePerformanceScore({
+    lcp: metrics.lcp,
+    cls: metrics.cls,
+    jsSize: totalJSSize,
+    blockingCSS: blockingCSSCount,
+    syncScripts: syncScriptCount,
+  });
+
   return {
     name: "Performance",
     type: "performance",
     detected: true,
+    score: score,
 
     data: {
       coreWebVitals: {
@@ -197,51 +206,113 @@ function buildPerformanceInsights({ coreWebVitals, bundleAnalysis, renderBlockin
   const blockingCSS = renderBlocking?.blockingCSS;
   const syncScripts = renderBlocking?.syncScriptsInHead;
 
+  const source = "Performance";
+
   if (lcp != null) {
     if (lcp < 2500) {
-      insights.push({ level: "good", message: "Fast largest contentful paint" });
+      insights.push({ level: "good", message: "Fast largest contentful paint", source });
     } else if (lcp < 4000) {
-      insights.push({ level: "warning", message: "Moderate LCP, could be improved" });
+      insights.push({
+        level: "warning",
+        message: "LCP could be improved. Optimize images, enable lazy loading, or reduce server response time",
+        source,
+      });
     } else {
-      insights.push({ level: "critical", message: "Slow LCP may impact load performance" });
+      insights.push({
+        level: "critical",
+        message: "Slow LCP detected. Optimize images, use a CDN, reduce JavaScript execution, and improve server response time",
+        source,
+      });
     }
   }
 
   if (cls != null) {
     if (cls < 0.1) {
-      insights.push({ level: "good", message: "Stable layout with minimal shifts" });
+      insights.push({ level: "good", message: "Stable layout with minimal shifts", source });
     } else if (cls < 0.25) {
-      insights.push({ level: "warning", message: "Some layout shifts detected" });
+      insights.push({
+        level: "warning",
+        message: "Layout shifts detected. Reserve space for images and avoid inserting content above existing elements",
+        source,
+      });
     } else {
-      insights.push({ level: "critical", message: "High layout shift affects UX" });
+      insights.push({
+        level: "critical",
+        message: "High layout shift detected. Define width and height for media and prevent late DOM changes that move content",
+        source,
+      });
     }
   }
 
   if (jsSize != null) {
     if (jsSize < 150 * 1024) {
-      insights.push({ level: "good", message: "Small JavaScript bundle size" });
+      insights.push({ level: "good", message: "Small JavaScript bundle size", source });
     } else if (jsSize < 500 * 1024) {
-      insights.push({ level: "warning", message: "Moderate JavaScript bundle size" });
+      insights.push({
+        level: "warning",
+        message: "Moderate JS bundle size. Use code splitting and lazy load non-critical modules",
+        source,
+      });
     } else {
-      insights.push({ level: "critical", message: "Large JavaScript bundle may slow loading" });
+      insights.push({
+        level: "critical",
+        message: "Large JavaScript bundle detected. Reduce bundle size with code splitting, tree shaking, and removing unused dependencies",
+        source,
+      });
     }
   }
 
   if (jsCount > 20) {
-    insights.push({ level: "warning", message: "High number of JavaScript files detected" });
+    insights.push({
+      level: "warning",
+      message: "Many JavaScript files detected. Consider bundling or reducing script fragmentation",
+      source,
+    });
   }
 
   if (blockingCSS > 0) {
-    insights.push({ level: "warning", message: "Blocking CSS may delay initial render" });
+    insights.push({
+      level: "warning",
+      message: "Blocking CSS detected. Inline critical CSS and defer non-critical styles",
+      source,
+    });
   }
 
   if (syncScripts > 0) {
-    insights.push({ level: "critical", message: "Synchronous scripts in head block rendering" });
+    insights.push({
+      level: "critical",
+      message: "Synchronous scripts in head block rendering. Use async or defer attributes",
+      source,
+    });
   }
 
   if (lcp != null && cls != null && lcp < 2500 && cls < 0.1 && jsSize < 150 * 1024) {
-    insights.push({ level: "good", message: "Overall strong performance profile" });
+    insights.push({ level: "good", message: "Overall strong performance profile", source });
   }
 
   return insights;
+}
+
+function calculatePerformanceScore({ lcp, cls, jsSize, blockingCSS, syncScripts }) {
+  let score = 100;
+
+  if (lcp != null) {
+    if (lcp > 4000) score -= 30;
+    else if (lcp > 2500) score -= 15;
+  }
+
+  if (cls != null) {
+    if (cls > 0.25) score -= 25;
+    else if (cls > 0.1) score -= 10;
+  }
+
+  if (jsSize != null) {
+    if (jsSize > 500 * 1024) score -= 20;
+    else if (jsSize > 150 * 1024) score -= 10;
+  }
+
+  if (blockingCSS > 0) score -= 5;
+  if (syncScripts > 0) score -= 10;
+
+  return Math.max(0, score);
 }
