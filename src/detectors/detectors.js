@@ -35,8 +35,9 @@ import { detectJoomla } from "./cms/joomla-detector.js";
 
 import { detectRenderStrategy } from "./rendering/render-strategy-detector.js";
 import { detectCDN } from "./cdn/cdn-detector.js";
-import { detectPerformance } from "./performance/performance-detector.js";
+import { detectInteractionPerformance } from "./performance/interaction-performance-detector.js";
 import { detectSEO } from "./seo/seo-detector.js";
+import { detectLoadingPerformance } from "./performance/loading-performance-detector.js";
 
 export const DETECTORS = [
   detectAngular,
@@ -78,7 +79,8 @@ export const DETECTORS = [
 
   detectCDN,
 
-  detectPerformance,
+  detectLoadingPerformance,
+  detectInteractionPerformance,
 
   detectSEO,
 ];

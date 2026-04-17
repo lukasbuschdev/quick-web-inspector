@@ -119,15 +119,18 @@ li {
   font-size: 22px;
 }
 
-.score.good {
+.score.good,
+.metric.good {
   color: #4caf50;
 }
 
-.score.warning {
+.score.warning,
+.metric.warning {
   color: #ff9800;
 }
 
-.score.critical {
+.score.critical,
+.metric.critical {
   color: #f44336;
 }
 

@@ -23,18 +23,38 @@ function runDetection() {
     meta: scanMeta(),
   };
 
-  const results = DETECTORS.map((detector) => detector(pageData));
+  const results = DETECTORS.map((detector) => {
+    try {
+      return detector(pageData);
+    } catch (e) {
+      return {
+        name: detector.name || "Unknown",
+        detected: false,
+        type: "other",
+        error: true,
+        evidence: [],
+      };
+    }
+  });
+
   const renderingResult = results.find((r) => r.type === "rendering") || null;
   let cdnResult = results.find((r) => r.type === "infrastructure") || null;
-  const performanceResult = results.find((r) => r.type === "performance") || null;
-  const seoResult = results.find((r) => r.type === "seo") || null;
-  const performanceScore = performanceResult?.score ?? null;
+  const byType = Object.fromEntries(results.map((r) => [r.type, r]));
+
+  const loadingPerformanceResult = byType["loading-performance"] || null;
+  const interactionPerformanceResult = byType["interaction-performance"] || null;
+  const seoResult = byType["seo"] || null;
+
+  const loadingPerformanceScore = loadingPerformanceResult?.score ?? null;
+  const interactionPerformanceScore = interactionPerformanceResult?.score ?? null;
   const seoScore = seoResult?.score ?? null;
 
   let overallScore = null;
 
-  if (performanceScore != null && seoScore != null) {
-    overallScore = Math.round((performanceScore + seoScore) / 2);
+  const scores = [loadingPerformanceScore, interactionPerformanceScore, seoScore].filter((s) => s != null);
+
+  if (scores.length > 0) {
+    overallScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
   }
 
   const levelPriority = {
@@ -42,7 +62,7 @@ function runDetection() {
     warning: 1,
   };
 
-  const allIssues = [...(performanceResult?.insights || []), ...(seoResult?.insights || [])];
+  const allIssues = [...(loadingPerformanceResult?.insights || []), ...(interactionPerformanceResult?.insights || []), ...(seoResult?.insights || [])];
 
   const topIssues = allIssues
     .filter((i) => i.level === "critical" || i.level === "warning")
@@ -50,14 +70,15 @@ function runDetection() {
     .slice(0, 3);
 
   const summary = {
-    performanceScore,
+    loadingPerformanceScore,
+    interactionPerformanceScore,
     seoScore,
     overallScore,
     topIssues,
   };
 
   const scoredResults = results.map((result) => {
-    if (result.type === "rendering" || result.type === "infrastructure" || result.type === "performance" || result.type === "seo") {
+    if (result.type === "rendering" || result.type === "infrastructure" || result.type === "loading-performance" || result.type === "interaction-performance" || result.type === "seo") {
       return result;
     }
 
@@ -77,7 +98,7 @@ function runDetection() {
     if (!r.type) r.type = "other";
   });
 
-  const stackResults = finalResults.filter((r) => r.type !== "rendering" && r.type !== "infrastructure" && r.type !== "performance" && r.type !== "seo");
+  const stackResults = finalResults.filter((r) => r.type !== "rendering" && r.type !== "infrastructure" && r.type !== "loading-performance" && r.type !== "interaction-performance" && r.type !== "seo");
   const detected = stackResults.filter((r) => r.detected === true);
 
   const primary =
@@ -112,7 +133,7 @@ function runDetection() {
     const tabId = response?.tabId;
 
     if (!tabId) {
-      sendResults(primary, secondary, renderingResult, cdnResult, performanceResult, seoResult, summary);
+      sendResults(primary, secondary, renderingResult, cdnResult, loadingPerformanceResult, interactionPerformanceResult, seoResult, summary, fallback);
       return;
     }
 
@@ -130,12 +151,12 @@ function runDetection() {
         });
       }
 
-      sendResults(primary, secondary, renderingResult, cdnResult, performanceResult, seoResult, summary);
+      sendResults(primary, secondary, renderingResult, cdnResult, loadingPerformanceResult, interactionPerformanceResult, seoResult, summary, fallback);
     });
   });
 }
 
-function sendResults(primary, secondary, renderingResult, cdnResult, performanceResult, seoResult, summary) {
+function sendResults(primary, secondary, renderingResult, cdnResult, loadingPerformanceResult, interactionPerformanceResult, seoResult, summary, fallback) {
   chrome.runtime.sendMessage({
     type: "STORE_STACK_RESULTS",
     data: {
@@ -143,9 +164,13 @@ function sendResults(primary, secondary, renderingResult, cdnResult, performance
       secondary: primary ? secondary : [],
       rendering: renderingResult,
       cdn: cdnResult,
-      performance: performanceResult,
+      performance: {
+        loading: loadingPerformanceResult,
+        interaction: interactionPerformanceResult,
+      },
       seo: seoResult,
       summary: summary,
+      fallback: fallback,
     },
   });
 }

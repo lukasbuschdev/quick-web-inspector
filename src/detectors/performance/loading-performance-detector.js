@@ -6,7 +6,7 @@ let metrics = {
 
 let observersInitialized = false;
 
-export function detectPerformance() {
+export function detectLoadingPerformance() {
   initObservers();
 
   const evidence = [];
@@ -79,8 +79,8 @@ export function detectPerformance() {
   });
 
   return {
-    name: "Performance",
-    type: "performance",
+    name: "Loading Performance",
+    type: "loading-performance",
     detected: true,
     score: score,
 
@@ -206,7 +206,7 @@ function buildPerformanceInsights({ coreWebVitals, bundleAnalysis, renderBlockin
   const blockingCSS = renderBlocking?.blockingCSS;
   const syncScripts = renderBlocking?.syncScriptsInHead;
 
-  const source = "Performance";
+  const source = "Loading";
 
   if (lcp != null) {
     if (lcp < 2500) {

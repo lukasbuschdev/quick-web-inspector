@@ -14,8 +14,23 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
   });
 });
 
+const thresholds = {
+  animatedCount: { warning: 15, critical: 40 },
+  expensiveAnimationCount: { warning: 3, critical: 10 },
+  fixedCount: { warning: 5, critical: 10 },
+  hoverRules: { warning: 10, critical: 25 },
+  boxShadowCount: { warning: 15, critical: 40 },
+  filterCount: { warning: 3, critical: 10 },
+  backdropFilterCount: { warning: 1, critical: 5 },
+  gradientCount: { warning: 20, critical: 50 },
+  layoutAnimationCount: { warning: 2, critical: 5 },
+};
+
 function renderResults(data) {
   const { primary, secondary, rendering, cdn, performance, seo, summary } = data || {};
+  const loading = performance?.loading || null;
+  const interaction = performance?.interaction || null;
+
   let html = "";
   const detectedTypes = [];
 
@@ -35,7 +50,7 @@ function renderResults(data) {
   });
 
   if (summary) {
-    const { performanceScore, seoScore, overallScore, topIssues } = summary;
+    const { loadingPerformanceScore, interactionPerformanceScore, seoScore, overallScore, topIssues } = summary;
     const levelPriority = {
       critical: 2,
       warning: 1,
@@ -58,9 +73,17 @@ function renderResults(data) {
 
         <div class="summary-breakdown column gap-20">
           <div class="row gap-10">
-            <span><strong class="white">Performance:</strong></span>
+            <span><strong class="white">Loading Performance:</strong></span>
             <div class="row gap-5">
-              <span class="score ${getScoreClass(performanceScore)}">${performanceScore ?? "N/A"}</span>
+              <span class="score ${getScoreClass(loadingPerformanceScore)}">${loadingPerformanceScore ?? "N/A"}</span>
+              <span class="white"><strong>/ 100</strong></span>
+            </div>
+          </div>
+          
+          <div class="row gap-10">
+            <span><strong class="white">Interaction Performance:</strong></span>
+            <div class="row gap-5">
+              <span class="score ${getScoreClass(interactionPerformanceScore)}">${interactionPerformanceScore ?? "N/A"}</span>
               <span class="white"><strong>/ 100</strong></span>
             </div>
           </div>
@@ -88,8 +111,8 @@ function renderResults(data) {
     `;
   }
 
-  if (performance && performance.data) {
-    const { coreWebVitals, bundleAnalysis, renderBlocking } = performance.data;
+  if (loading) {
+    const { coreWebVitals, bundleAnalysis, renderBlocking } = loading.data;
     const lcp = coreWebVitals?.lcp ? `<span><strong>LCP:</strong> ${coreWebVitals.lcp.value} (${coreWebVitals.lcp.rating})</span>` : `<span class="muted"><strong>LCP:</strong> analyzing...</span>`;
     const cls = coreWebVitals?.cls ? `<span><strong>CLS:</strong> ${coreWebVitals.cls.value} (${coreWebVitals.cls.rating})</span>` : `<span class="muted"><strong>CLS:</strong> analyzing...</span>`;
     const totalJS = bundleAnalysis?.totalJSSize ? `<span><strong>Total JS size:</strong> ${bundleAnalysis.totalJSSize.value}</span>` : `<span class="muted">Total JS size: not available</span>`;
@@ -106,7 +129,7 @@ function renderResults(data) {
       good: [],
     };
 
-    (performance.insights || []).forEach((item) => {
+    (loading.insights || []).forEach((item) => {
       if (groupedInsights[item.level]) {
         groupedInsights[item.level].push(item.message);
       }
@@ -118,7 +141,7 @@ function renderResults(data) {
       ${buildPerformanceInsightGroup("Good Signals", groupedInsights.good, "good")}
     `;
 
-    html += /*html*/ `<div class="result-section"><strong>Performance</strong></div>`;
+    html += /*html*/ `<div class="result-section"><strong>Loading Performance</strong></div>`;
     html += /*html*/ `
       <div class="result-card column gap-30">
         <div class="column gap-10">
@@ -149,6 +172,131 @@ function renderResults(data) {
               </div>
             `
             : ""
+        }
+      </div>
+    `;
+  }
+
+  if (interaction) {
+    const motionOverview = /*html*/ `
+      <div class="column gap-10">
+        <span class="white"><strong>Motion Overview</strong></span>
+      
+        <span>
+          <strong>Animated elements:</strong>
+          <span class="metric ${getMetricClass(interaction.data.animatedCount, thresholds.animatedCount)}">
+            ${interaction.data.animatedCount}
+          </span>
+        </span>
+      
+        <span>
+          <strong>Expensive animations:</strong>
+          <span class="metric ${getMetricClass(interaction.data.expensiveAnimationCount, thresholds.expensiveAnimationCount)}">
+            ${interaction.data.expensiveAnimationCount}
+          </span>
+        </span>
+      
+        <span>
+          <strong>Fixed elements:</strong>
+          <span class="metric ${getMetricClass(interaction.data.fixedCount, thresholds.fixedCount)}">
+            ${interaction.data.fixedCount}
+          </span>
+        </span>
+      
+        <span>
+          <strong>Hover rules:</strong>
+          <span class="metric ${getMetricClass(interaction.data.hoverRules, thresholds.hoverRules)}">
+            ${interaction.data.hoverRules}
+          </span>
+        </span>
+      
+        <span>
+          <strong>Reduced motion:</strong>
+          <span class="metric ${interaction.data.hasReducedMotionSupport ? "good" : "critical"}">
+            ${interaction.data.hasReducedMotionSupport ? "supported" : "not supported"}
+          </span>
+        </span>
+      
+        <span>
+          <strong>Box shadows:</strong>
+          <span class="metric ${getMetricClass(interaction.data.boxShadowCount, thresholds.boxShadowCount)}">
+            ${interaction.data.boxShadowCount}
+          </span>
+        </span>
+      
+        <span>
+          <strong>Filters:</strong>
+          <span class="metric ${getMetricClass(interaction.data.filterCount, thresholds.filterCount)}">
+            ${interaction.data.filterCount}
+          </span>
+        </span>
+      
+        <span>
+          <strong>Backdrop filters:</strong>
+          <span class="metric ${getMetricClass(interaction.data.backdropFilterCount, thresholds.backdropFilterCount)}">
+            ${interaction.data.backdropFilterCount}
+          </span>
+        </span>
+      
+        <span>
+          <strong>Gradients:</strong>
+          <span class="metric ${getMetricClass(interaction.data.gradientCount, thresholds.gradientCount)}">
+            ${interaction.data.gradientCount}
+          </span>
+        </span>
+      
+        <span>
+          <strong>GPU-friendly animations:</strong>
+          <span class="metric good">
+            ${interaction.data.gpuFriendlyAnimationCount}
+          </span>
+        </span>
+      
+        <span>
+          <strong>Layout-triggering animations:</strong>
+          <span class="metric ${getMetricClass(interaction.data.layoutAnimationCount, thresholds.layoutAnimationCount)}">
+            ${interaction.data.layoutAnimationCount}
+          </span>
+        </span>
+      </div>
+    `;
+
+    const groupedInsights = {
+      critical: [],
+      warning: [],
+      good: [],
+    };
+
+    (interaction.insights || []).forEach((item) => {
+      if (groupedInsights[item.level]) {
+        groupedInsights[item.level].push(item.message);
+      }
+    });
+
+    const insightsItems = `
+      ${buildPerformanceInsightGroup("Critical Issues", groupedInsights.critical, "critical")}
+      ${buildPerformanceInsightGroup("Warnings", groupedInsights.warning, "warning")}
+      ${buildPerformanceInsightGroup("Good Signals", groupedInsights.good, "good")}
+    `;
+
+    html += /*html*/ `<div class="result-section"><strong>Interaction Performance</strong></div>`;
+    html += /*html*/ `
+      <div class="result-card column gap-30">
+        ${motionOverview}
+
+        ${
+          insightsItems
+            ? /*html*/ `
+              <div class="insights column gap-10">
+                <strong>Analysis</strong>
+                <ul>${insightsItems}</ul>
+              </div>
+            `
+            : /*html*/ `
+              <span class="muted">
+                No major interaction or animation issues detected
+              </span>
+            `
         }
       </div>
     `;
@@ -441,6 +589,14 @@ function getScoreClass(score) {
   if (score >= 85) return "good";
   if (score >= 60) return "warning";
   return "critical";
+}
+
+function getMetricClass(value, thresholds) {
+  if (value == null) return "";
+
+  if (value >= thresholds.critical) return "critical";
+  if (value >= thresholds.warning) return "warning";
+  return "good";
 }
 
 function initAutoRefresh(tabId) {
