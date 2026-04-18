@@ -1,4 +1,4 @@
-import { truncateUrl } from "../popup";
+import { truncateUrl } from "../utils/helpers";
 
 export function renderSEO(seo) {
   const { title, description, canonical, lang, headings, images, meta } = seo.data;

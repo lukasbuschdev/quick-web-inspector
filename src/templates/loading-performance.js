@@ -1,4 +1,4 @@
-import { buildPerformanceInsightGroup, truncateUrl } from "../popup";
+import { buildPerformanceInsightGroup, truncateUrl } from "../utils/helpers";
 
 export function renderLoading(loading) {
   const { coreWebVitals, bundleAnalysis, renderBlocking } = loading.data;

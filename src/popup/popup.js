@@ -1,12 +1,5 @@
-import { renderCDN } from "./templates/cdn";
-import { renderInteraction } from "./templates/interaction-performance";
-import { renderLoading } from "./templates/loading-performance";
-import { renderPrimary } from "./templates/primary-technologies";
-import { renderRenderingStrategy } from "./templates/rendering";
-import { renderSecondary, renderSecondaryFallback } from "./templates/secondary-technologies";
-import { renderSEO } from "./templates/seo";
-import { renderSummary } from "./templates/summary";
-import { renderFallback } from "./templates/technology-fallback";
+import { renderSummary } from "../templates/summary";
+import { renderFallback } from "../templates/technology-fallback";
 
 const resultsContainer = document.getElementById("results");
 
@@ -24,55 +17,16 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
   });
 });
 
-function processTechnologyData(primary, secondary) {
-  const detectedTypes = [];
-
-  if (primary) detectedTypes.push(primary.type);
-  if (secondary?.length) {
-    secondary.forEach((r) => detectedTypes.push(r.type));
-  }
-
-  return {
-    categoryInsights: buildCategoryInsights({
-      hasFramework: detectedTypes.includes("framework"),
-      hasCMS: detectedTypes.includes("cms"),
-      hasLibrary: detectedTypes.includes("library"),
-    }),
-  };
-}
-
 function renderResults(data) {
-  const { primary, secondary, rendering, cdn, performance, seo, summary } = data || {};
-  const loading = performance?.loading || null;
-  const interaction = performance?.interaction || null;
-  const { categoryInsights } = processTechnologyData(primary, secondary);
-
+  const { summary } = data || {};
   let html = "";
 
   if (summary) {
     html += renderSummary(summary);
-  }
-
-  if (loading) {
-    html += renderLoading(loading);
-  }
-
-  if (interaction) {
-    html += renderInteraction(interaction);
-  }
-
-  if (seo && seo.data) {
-    html += renderSEO(seo);
-  }
-
-  if (primary) {
-    html += renderPrimary(primary, categoryInsights);
-  }
-
-  if (secondary) {
     html += /*html*/ `
-      <div class="result-section"><strong>Secondary Technologies</strong></div>
-      ${secondary.length > 0 ? secondary.map(renderSecondary).join("") : renderSecondaryFallback()}
+      <div class="dashboard-btn-container">
+        <button id="open-dashboard-btn">View Full Analysis</button>
+      </div>
     `;
   }
 
@@ -80,50 +34,25 @@ function renderResults(data) {
     html = renderFallback();
   }
 
-  if (rendering) {
-    html += renderRenderingStrategy(rendering);
-  }
-
-  if (cdn) {
-    html += renderCDN(cdn);
-  }
-
   resultsContainer.innerHTML = html;
+  attachDashboardHandler();
 }
 
-export function buildPerformanceInsightGroup(title, items, className) {
-  if (!items.length) return "";
+function attachDashboardHandler() {
+  const btn = document.getElementById("open-dashboard-btn");
+  if (!btn) return;
 
-  return /*html*/ `
-    <div class="insight-group ${className}">
-      <strong>${title}</strong>
-      <ul>
-        ${items.map((msg) => `<li>${msg}</li>`).join("")}
-      </ul>
-    </div>
-  `;
-}
+  btn.addEventListener("click", () => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const activeTab = tabs[0];
 
-export function truncateUrl(str, max = 40) {
-  if (!str) return "";
-  return str.length > max ? str.slice(0, max) + "..." : str;
-}
+      if (!activeTab?.id) return;
 
-function buildCategoryInsights({ hasFramework, hasCMS, hasLibrary }) {
-  const insights = [];
-
-  if (!hasFramework && !hasCMS) {
-    insights.push("No framework or CMS detected");
-  } else {
-    if (!hasFramework) insights.push("No frontend framework detected");
-    if (!hasCMS) insights.push("No CMS detected");
-  }
-
-  if (!hasLibrary && !hasFramework && !hasCMS) {
-    insights.push("No major frontend libraries detected");
-  }
-
-  return insights;
+      chrome.tabs.create({
+        url: chrome.runtime.getURL(`src/dashboard/dashboard.html?tabId=${activeTab.id}`),
+      });
+    });
+  });
 }
 
 function initAutoRefresh(tabId) {

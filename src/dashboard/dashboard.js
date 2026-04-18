@@ -1,0 +1,63 @@
+import { renderCDN } from "../templates/cdn";
+import { renderInteraction } from "../templates/interaction-performance";
+import { renderLoading } from "../templates/loading-performance";
+import { renderPrimary } from "../templates/primary-technologies";
+import { renderRenderingStrategy } from "../templates/rendering";
+import { renderSecondary, renderSecondaryFallback } from "../templates/secondary-technologies";
+import { renderSEO } from "../templates/seo";
+import { renderSummary } from "../templates/summary";
+import { renderFallback } from "../templates/technology-fallback";
+import { processTechnologyData } from "../utils/technology-processing";
+
+const container = document.getElementById("dashboard-results");
+const urlParams = new URLSearchParams(window.location.search);
+const tabId = urlParams.get("tabId");
+
+if (!tabId) {
+  container.innerHTML = "<span>No data available</span>";
+} else {
+  chrome.storage.local.get(`stackResults_${tabId}`, (data) => {
+    renderDashboard(data[`stackResults_${tabId}`] || {});
+  });
+}
+
+function renderDashboard(data) {
+  const { primary, secondary, rendering, cdn, performance, seo, summary } = data || {};
+
+  const loading = performance?.loading || null;
+  const interaction = performance?.interaction || null;
+
+  const { categoryInsights } = processTechnologyData(primary || null, secondary || []);
+
+  let html = "";
+
+  if (summary) html += renderSummary(summary);
+  if (loading) html += renderLoading(loading);
+  if (interaction) html += renderInteraction(interaction);
+  if (seo && seo.data) html += renderSEO(seo);
+
+  if (primary) {
+    html += renderPrimary(primary, categoryInsights);
+  }
+
+  if (secondary && secondary.length) {
+    html += /*html*/ `
+        <div class="result-section"><strong>Secondary Technologies</strong></div>
+        ${secondary.map(renderSecondary).join("")}
+    `;
+  } else if (secondary) {
+    html += /*html*/ `
+        <div class="result-section"><strong>Secondary Technologies</strong></div>
+        ${renderSecondaryFallback()}
+    `;
+  }
+
+  if (rendering) html += renderRenderingStrategy(rendering);
+  if (cdn) html += renderCDN(cdn);
+
+  if (!html) {
+    html = renderFallback();
+  }
+
+  container.innerHTML = html;
+}

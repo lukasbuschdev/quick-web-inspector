@@ -1,4 +1,4 @@
-import { buildPerformanceInsightGroup } from "../popup";
+import { buildPerformanceInsightGroup } from "../utils/helpers";
 
 const thresholds = {
   animatedCount: { warning: 15, critical: 40 },
