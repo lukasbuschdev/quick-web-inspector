@@ -10,6 +10,9 @@ export function detectAccessibility(pageData) {
   const insights = [];
 
   const { totalButtons, totalInputs, unlabeledButtons, clickableDivs, inputsWithoutLabel, fakeButtons, inaccessibleInteractive, anchorWithoutHref, buttonsMissingType, elementsWithoutFocusStyle } = analyzeElements(elements);
+  const issueCount = [unlabeledButtons, inputsWithoutLabel, fakeButtons, inaccessibleInteractive, clickableDivs > 5 ? 1 : 0, anchorWithoutHref, buttonsMissingType, elementsWithoutFocusStyle].reduce((sum, val) => sum + (val > 0 ? 1 : 0), 0);
+
+  const showGoodSignals = issueCount >= 2;
 
   if (!hasMain) {
     insights.push({
@@ -91,6 +94,78 @@ export function detectAccessibility(pageData) {
     });
   }
 
+  if (hasMain && showGoodSignals) {
+    insights.push({
+      level: "good",
+      category: "Structure",
+      message: "Main landmark detected. This improves page structure and screen reader navigation.",
+    });
+  }
+
+  if (hasNav && showGoodSignals) {
+    insights.push({
+      level: "good",
+      category: "Structure",
+      message: "Navigation landmark detected. This helps users and assistive technologies understand site navigation.",
+    });
+  }
+
+  if (totalButtons > 0 && unlabeledButtons === 0 && showGoodSignals) {
+    insights.push({
+      level: "good",
+      category: "Forms",
+      message: "All buttons have accessible names. This improves usability and accessibility.",
+    });
+  }
+
+  if (totalInputs > 0 && inputsWithoutLabel === 0 && showGoodSignals) {
+    insights.push({
+      level: "good",
+      category: "Forms",
+      message: "All input fields are properly labeled. This improves form accessibility.",
+    });
+  }
+
+  if (fakeButtons === 0 && showGoodSignals) {
+    insights.push({
+      level: "good",
+      category: "Interaction",
+      message: "No fake button patterns detected. Semantic elements are used correctly.",
+    });
+  }
+
+  if (inaccessibleInteractive === 0 && showGoodSignals) {
+    insights.push({
+      level: "good",
+      category: "Interaction",
+      message: "Interactive elements support keyboard navigation.",
+    });
+  }
+
+  if (anchorWithoutHref === 0 && showGoodSignals) {
+    insights.push({
+      level: "good",
+      category: "Interaction",
+      message: "No anchors misused as buttons detected.",
+    });
+  }
+
+  if (totalButtons > 0 && buttonsMissingType === 0 && showGoodSignals) {
+    insights.push({
+      level: "good",
+      category: "Forms",
+      message: "All buttons define a type attribute, preventing unintended form behavior.",
+    });
+  }
+
+  if (elementsWithoutFocusStyle === 0 && showGoodSignals) {
+    insights.push({
+      level: "good",
+      category: "Accessibility",
+      message: "Focus styles appear to be present on interactive elements.",
+    });
+  }
+
   const metrics = {
     totalElements: elements.length,
     totalButtons,
@@ -115,6 +190,7 @@ export function detectAccessibility(pageData) {
     score,
     detected: true,
     insights,
+    showGoodSignals,
   };
 }
 

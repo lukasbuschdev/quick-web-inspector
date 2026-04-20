@@ -14,7 +14,7 @@ const priority = {
   other: 0,
 };
 
-function runDetection() {
+async function runDetection() {
   const pageData = {
     dom: scanDOM(),
     scripts: scanScripts(),
@@ -22,19 +22,21 @@ function runDetection() {
     meta: scanMeta(),
   };
 
-  const results = DETECTORS.map((detector) => {
-    try {
-      return detector(pageData);
-    } catch (e) {
-      return {
-        name: detector.name || "Unknown",
-        detected: false,
-        type: "other",
-        error: true,
-        evidence: [],
-      };
-    }
-  });
+  const results = await Promise.all(
+    DETECTORS.map(async (detector) => {
+      try {
+        return await detector(pageData);
+      } catch (e) {
+        return {
+          name: detector.name || "Unknown",
+          detected: false,
+          type: "other",
+          error: true,
+          evidence: [],
+        };
+      }
+    }),
+  );
 
   const renderingResult = results.find((r) => r.type === "rendering") || null;
   let cdnResult = results.find((r) => r.type === "infrastructure") || null;

@@ -73,33 +73,82 @@ export function calculateInteractionPerformanceScore(data) {
   let score = 100;
   let penalty = 0;
 
-  const { boxShadowCount = 0, filterCount = 0, backdropFilterCount = 0, gradientCount = 0, animatedCount = 0, layoutAnimationCount = 0, gpuFriendlyAnimationCount = 0, domNodes = 1 } = data;
+  const {
+    boxShadowCount = 0,
+    filterCount = 0,
+    backdropFilterCount = 0,
+    gradientCount = 0,
+    animatedCount = 0,
+    passiveAnimationCount = 0,
+    interactionAnimationCount = 0,
+    expensivePassiveAnimationCount = 0,
+    expensiveInteractionAnimationCount = 0,
+    cheapInteractionCount = 0,
+    heavyInteractionCount = 0,
+    layoutAnimationCount = 0,
+    gpuFriendlyAnimationCount = 0,
+    domNodes = 1,
+    jsAnimationActivity = null,
+  } = data;
+
   const totalEffects = boxShadowCount + filterCount * 2 + backdropFilterCount * 3 + gradientCount * 0.2;
   const density = totalEffects / Math.max(domNodes, 50);
   const totalAnimations = Math.max(animatedCount, 1);
   const gpuRatio = gpuFriendlyAnimationCount / totalAnimations;
+  const jsLevel = jsAnimationActivity?.level || "none";
 
   if (density > 1.2) penalty += 15;
   else if (density > 0.8) penalty += 10;
   else if (density > 0.4) penalty += 5;
 
-  if (animatedCount > 80) penalty += 10;
-  else if (animatedCount > 40) penalty += 6;
+  if (passiveAnimationCount > 8) penalty += 14;
+  else if (passiveAnimationCount > 4) penalty += 8;
+  else if (passiveAnimationCount > 0) penalty += 3;
 
-  if (layoutAnimationCount > 20) penalty += 20;
-  else if (layoutAnimationCount > 10) penalty += 12;
-  else if (layoutAnimationCount > 0) penalty += 6;
+  if (interactionAnimationCount > 50) penalty += 3;
+  else if (interactionAnimationCount > 25) penalty += 1;
 
-  if (gpuRatio > 0.8) score += 10;
-  else if (gpuRatio > 0.5) score += 5;
+  if (expensivePassiveAnimationCount > 3) penalty += 14;
+  else if (expensivePassiveAnimationCount > 0) penalty += 7;
 
-  if (layoutAnimationCount > 10 && density > 0.8 && animatedCount > 40) {
-    penalty += 6;
+  if (expensiveInteractionAnimationCount > 15) penalty += 4;
+  else if (expensiveInteractionAnimationCount > 6) penalty += 2;
+
+  if (heavyInteractionCount > 20) penalty += 5;
+  else if (heavyInteractionCount > 10) penalty += 2;
+  else if (heavyInteractionCount > 5) penalty += 1;
+
+  if (cheapInteractionCount > 10 && heavyInteractionCount === 0) {
+    score += 5;
+  } else if (cheapInteractionCount > 5 && heavyInteractionCount <= 2) {
+    score += 2;
+  }
+
+  if (gpuRatio > 0.8) score += 15;
+  else if (gpuRatio > 0.6) score += 8;
+
+  if (layoutAnimationCount > 0 && heavyInteractionCount > 0) {
+    if (layoutAnimationCount > 30) penalty += 8;
+    else if (layoutAnimationCount > 15) penalty += 5;
+    else if (layoutAnimationCount > 5) penalty += 2;
+    else penalty += 1;
+  } else if (layoutAnimationCount > 20) {
+    penalty += 3;
+  } else if (layoutAnimationCount > 10) {
+    penalty += 1;
   }
 
   if (animatedCount > 10 && layoutAnimationCount < animatedCount * 0.2 && gpuRatio > 0.6) {
     score += 6;
   }
+
+  if (passiveAnimationCount === 0 && gpuRatio > 0.6 && jsLevel !== "high") {
+    score += 10;
+  }
+
+  if (jsLevel === "high") penalty += 6;
+  else if (jsLevel === "medium") penalty += 3;
+  else if (jsLevel === "low") penalty += 1;
 
   score -= penalty;
   return Math.max(0, Math.min(100, Math.round(score)));

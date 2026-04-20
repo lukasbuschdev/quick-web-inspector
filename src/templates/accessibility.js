@@ -29,14 +29,20 @@ export function renderAccessibility(accessibility) {
       </div>
 
       ${
-        insightsItems.trim()
+        issueCount > 0 || accessibility.showGoodSignals
           ? /*html*/ `
-          <div class="insights column gap-10">
-            <span class="block-title"><strong>Accessibility Analysis</strong></span>
-            ${insightsItems}
-          </div>
-        `
-          : ""
+            <div class="insights column gap-10">
+              <span class="block-title"><strong>Accessibility Analysis</strong></span>
+              ${insightsItems}
+            </div>
+          `
+          : /*html*/ `
+            <div class="insights column gap-10">
+              <span class="block-title"><strong>Accessibility Analysis</strong></span>
+              <span class="good">✓ No accessibility issues detected</span>
+              <span class="muted">Basic accessibility checks passed. Consider manual testing for advanced scenarios like screen reader support and focus behavior.</span>
+            </div>
+          `
       }
     </div>
   `;
