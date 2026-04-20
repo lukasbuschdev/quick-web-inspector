@@ -1,7 +1,7 @@
 import { getScoreClass } from "../utils/helpers";
 
 export function renderFullSummary(summary) {
-  const { loadingPerformanceScore, interactionPerformanceScore, seoScore, accessibilityScore, overallScore, topIssues } = summary;
+  const { loadingPerformanceScore, interactionPerformanceScore, seoScore, accessibilityScore, overallScore, topIssues, allInsights = [] } = summary || {};
 
   const levelPriority = {
     critical: 2,
@@ -102,6 +102,74 @@ export function renderFullSummary(summary) {
       `
           : ""
       }
+
+      ${renderQuickWinsSection(allInsights)}
     </div>
   `;
+}
+
+function renderQuickWinsSection(allInsights = []) {
+  const actionableInsights = allInsights.filter((item) => item && (item.level === "critical" || item.level === "warning"));
+  const { quick, advanced } = splitQuickWins(actionableInsights);
+
+  if (!quick.length && !advanced.length) return "";
+
+  return /*html*/ `
+    <div class="insights column gap-20">
+      <span class="block-title mt-15"><strong>Recommendations</strong></span>
+
+      ${
+        quick.length
+          ? /*html*/ `
+        <div class="column gap-10">
+          <span class="block-title">Quick Wins</span>
+          <ul>
+            ${quick.map((msg) => `<li>${msg}</li>`).join("")}
+          </ul>
+        </div>
+      `
+          : ""
+      }
+
+      ${
+        advanced.length
+          ? /*html*/ `
+        <div class="column gap-10">
+          <span class="block-title">Advanced Improvements</span>
+          <ul>
+            ${advanced.map((msg) => `<li>${msg}</li>`).join("")}
+          </ul>
+        </div>
+      `
+          : ""
+      }
+    </div>
+  `;
+}
+
+function splitQuickWins(insights = []) {
+  const quick = [];
+  const advanced = [];
+
+  const actionable = insights.filter((item) => item && (item.level === "critical" || item.level === "warning"));
+
+  const QUICK_PATTERNS = ["alt", "button type", "missing attribute", "label", "aria", "meta", "title", "add", "missing", "not set", "heading", "h1", "link text", "form field"];
+  const ADVANCED_PATTERNS = ["layout", "animation", "render", "performance", "strategy", "complex", "reduce", "optimize", "largest contentful paint", "lcp", "cls", "javascript-driven", "layout recalculation"];
+
+  actionable.forEach((item) => {
+    const msg = item.message.toLowerCase();
+    const isAdvanced = ADVANCED_PATTERNS.some((pattern) => msg.includes(pattern));
+    const isQuick = QUICK_PATTERNS.some((pattern) => msg.includes(pattern));
+
+    if (isQuick && !isAdvanced) {
+      quick.push(item.message);
+    } else {
+      advanced.push(item.message);
+    }
+  });
+
+  return {
+    quick: [...new Set(quick)].slice(0, 4),
+    advanced: [...new Set(advanced)].slice(0, 4),
+  };
 }

@@ -275,7 +275,7 @@ import{a as e,c as t,i as n,n as r,o as i,r as a,s as o,t as s}from"./assets/tec
         ${t.map(e=>`<li>${e}</li>`).join(``)}
       </ul>
     </div>
-  `:``}function F(t){let{loadingPerformanceScore:n,interactionPerformanceScore:r,seoScore:i,accessibilityScore:a,overallScore:o,topIssues:s}=t,c={critical:2,warning:1},l=(s||[]).sort((e,t)=>c[t.level]-c[e.level]).slice(0,3).map(e=>`
+  `:``}function F(t){let{loadingPerformanceScore:n,interactionPerformanceScore:r,seoScore:i,accessibilityScore:a,overallScore:o,topIssues:s,allInsights:c=[]}=t||{},l={critical:2,warning:1},u=(s||[]).sort((e,t)=>l[t.level]-l[e.level]).slice(0,3).map(e=>`
         <li>
           <span class="${e.level}">[${e.source}]</span>
           ${e.message}
@@ -351,17 +351,41 @@ import{a as e,c as t,i as n,n as r,o as i,r as a,s as o,t as s}from"./assets/tec
         </div>
       </div>
 
-      ${l?`
+      ${u?`
         <div class="insights column gap-10">
           <span class="block-title mt-15"><strong>Top Issues</strong></span>
-          <ul>${l}</ul>
+          <ul>${u}</ul>
+        </div>
+      `:``}
+
+      ${I(c)}
+    </div>
+  `}function I(e=[]){let{quick:t,advanced:n}=L(e.filter(e=>e&&(e.level===`critical`||e.level===`warning`)));return!t.length&&!n.length?``:`
+    <div class="insights column gap-20">
+      <span class="block-title mt-15"><strong>Recommendations</strong></span>
+
+      ${t.length?`
+        <div class="column gap-10">
+          <span class="block-title">Quick Wins</span>
+          <ul>
+            ${t.map(e=>`<li>${e}</li>`).join(``)}
+          </ul>
+        </div>
+      `:``}
+
+      ${n.length?`
+        <div class="column gap-10">
+          <span class="block-title">Advanced Improvements</span>
+          <ul>
+            ${n.map(e=>`<li>${e}</li>`).join(``)}
+          </ul>
         </div>
       `:``}
     </div>
-  `}function I(e,t){let n=[];return e&&n.push(e.type),t?.length&&t.forEach(e=>n.push(e.type)),{categoryInsights:L({hasFramework:n.includes(`framework`),hasCMS:n.includes(`cms`),hasLibrary:n.includes(`library`)})}}function L({hasFramework:e,hasCMS:t,hasLibrary:n}){let r=[];return!e&&!t?r.push(`No framework or CMS detected`):(e||r.push(`No frontend framework detected`),t||r.push(`No CMS detected`)),!n&&!e&&!t&&r.push(`No major frontend libraries detected`),r}function R(t){let n=t.insights||[],r={critical:[],warning:[],info:[]};n.forEach(e=>{r[e.level]&&r[e.level].push(e.message)});let i=r.critical.length+r.warning.length,a=`
-    ${z(`Critical Issues`,r.critical,`critical`)}
-    ${z(`Warnings`,r.warning,`warning`)}
-    ${z(`Info`,r.info,`info`)}
+  `}function L(e=[]){let t=[],n=[],r=e.filter(e=>e&&(e.level===`critical`||e.level===`warning`)),i=[`alt`,`button type`,`missing attribute`,`label`,`aria`,`meta`,`title`,`add`,`missing`,`not set`,`heading`,`h1`,`link text`,`form field`],a=[`layout`,`animation`,`render`,`performance`,`strategy`,`complex`,`reduce`,`optimize`,`largest contentful paint`,`lcp`,`cls`,`javascript-driven`,`layout recalculation`];return r.forEach(e=>{let r=e.message.toLowerCase(),o=a.some(e=>r.includes(e));i.some(e=>r.includes(e))&&!o?t.push(e.message):n.push(e.message)}),{quick:[...new Set(t)].slice(0,4),advanced:[...new Set(n)].slice(0,4)}}function R(e,t){let n=[];return e&&n.push(e.type),t?.length&&t.forEach(e=>n.push(e.type)),{categoryInsights:z({hasFramework:n.includes(`framework`),hasCMS:n.includes(`cms`),hasLibrary:n.includes(`library`)})}}function z({hasFramework:e,hasCMS:t,hasLibrary:n}){let r=[];return!e&&!t?r.push(`No framework or CMS detected`):(e||r.push(`No frontend framework detected`),t||r.push(`No CMS detected`)),!n&&!e&&!t&&r.push(`No major frontend libraries detected`),r}function B(t){let n=t.insights||[],r={critical:[],warning:[],info:[]};n.forEach(e=>{r[e.level]&&r[e.level].push(e.message)});let i=r.critical.length+r.warning.length,a=`
+    ${V(`Critical Issues`,r.critical,`critical`)}
+    ${V(`Warnings`,r.warning,`warning`)}
+    ${V(`Info`,r.info,`info`)}
   `;return`
     <div class="result-section"><strong>Accessibility</strong></div>
     <div class="result-card column gap-30">
@@ -384,17 +408,17 @@ import{a as e,c as t,i as n,n as r,o as i,r as a,s as o,t as s}from"./assets/tec
             </div>
           `}
     </div>
-  `}function z(e,t,n){return t.length?`
+  `}function V(e,t,n){return t.length?`
     <div class="insight-group ${n}">
       <span class="block-title mt-15"><strong>${e}</strong></span>
       <ul>
         ${t.map(e=>`<li>${e}</li>`).join(``)}
       </ul>
     </div>
-  `:``}var B=document.getElementById(`dashboard-results`),V=new URLSearchParams(window.location.search).get(`tabId`);V?chrome.storage.local.get(`stackResults_${V}`,e=>{H(e[`stackResults_${V}`]||{}),i(V,H)}):B.innerHTML=`<span>No data available</span>`;function H(e){let{primary:t,secondary:n,rendering:r,cdn:i,performance:a,seo:o,accessibility:l,summary:d}=e||{},{categoryInsights:f}=I(t||null,n||[]),p=a?.loading||null,h=a?.interaction||null,g=``;d&&(g+=F(d)),p&&(g+=m(p)),h&&(g+=u(h)),o&&o.data&&(g+=N(o)),l&&(g+=R(l)),t?g+=D(t,f):g+=O(),n&&n.length?g+=`
+  `:``}var H=document.getElementById(`dashboard-results`),U=new URLSearchParams(window.location.search).get(`tabId`);U?chrome.storage.local.get(`stackResults_${U}`,e=>{W(e[`stackResults_${U}`]||{}),i(U,W)}):H.innerHTML=`<span>No data available</span>`;function W(e){let{primary:t,secondary:n,rendering:r,cdn:i,performance:a,seo:o,accessibility:l,summary:d}=e||{},{categoryInsights:f}=R(t||null,n||[]),p=a?.loading||null,h=a?.interaction||null,g=``;d&&(g+=F(d)),p&&(g+=m(p)),h&&(g+=u(h)),o&&o.data&&(g+=N(o)),l&&(g+=B(l)),t?g+=D(t,f):g+=O(),n&&n.length?g+=`
           <div class="result-section"><strong>Secondary Technologies</strong></div>
           ${n.map(j).join(``)}
       `:n&&(g+=`
           <div class="result-section"><strong>Secondary Technologies</strong></div>
           ${M()}
-      `),r&&(g+=k(r)),i&&(g+=c(i)),g||=s(),B.innerHTML=g}
+      `),r&&(g+=k(r)),i&&(g+=c(i)),g||=s(),H.innerHTML=g}

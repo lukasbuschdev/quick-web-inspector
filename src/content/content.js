@@ -47,50 +47,6 @@ async function runDetection() {
   const seoResult = byType["seo"] || null;
   const accessibilityResult = byType["accessibility"] || null;
 
-  const loadingPerformanceScore = loadingPerformanceResult?.score ?? null;
-  const interactionPerformanceScore = interactionPerformanceResult?.score ?? null;
-  const seoScore = seoResult?.score ?? null;
-  const accessibilityScore = accessibilityResult?.score ?? null;
-
-  let overallScore = null;
-
-  const scores = {
-    loading: loadingPerformanceScore,
-    interaction: interactionPerformanceScore,
-    seo: seoScore,
-    accessibility: accessibilityScore,
-  };
-
-  if (scores.loading != null || scores.interaction != null || scores.seo != null) {
-    overallScore = calculateOverallScore(scores);
-  }
-
-  const levelPriority = {
-    critical: 2,
-    warning: 1,
-  };
-
-  const allIssues = [...(loadingPerformanceResult?.insights || []), ...(interactionPerformanceResult?.insights || []), ...(seoResult?.insights || []), ...(accessibilityResult?.insights || [])];
-  const totalIssueCounts = {
-    critical: allIssues.filter((i) => i.level === "critical").length,
-    warning: allIssues.filter((i) => i.level === "warning").length,
-  };
-
-  const topIssues = allIssues
-    .filter((i) => i.level === "critical" || i.level === "warning")
-    .sort((a, b) => levelPriority[b.level] - levelPriority[a.level])
-    .slice(0, 3);
-
-  const summary = {
-    loadingPerformanceScore,
-    interactionPerformanceScore,
-    seoScore,
-    accessibilityScore,
-    overallScore,
-    topIssues,
-    totalIssueCounts,
-  };
-
   const scoredResults = results.map((result) => {
     if (result.type === "rendering" || result.type === "infrastructure" || result.type === "loading-performance" || result.type === "interaction-performance" || result.type === "seo" || result.type === "accessibility") {
       return result;
@@ -147,12 +103,18 @@ async function runDetection() {
     const tabId = response?.tabId;
 
     if (!tabId) {
+      const summary = buildSummary(loadingPerformanceResult, interactionPerformanceResult, seoResult, accessibilityResult);
+
       sendResults(primary, secondary, renderingResult, cdnResult, loadingPerformanceResult, interactionPerformanceResult, seoResult, accessibilityResult, summary, fallback);
       return;
     }
 
-    chrome.storage.local.get(`cdnHeaders_${tabId}`, (data) => {
+    chrome.storage.local.get([`cdnHeaders_${tabId}`, `stackResults_${tabId}`], (data) => {
       const headerCDN = data[`cdnHeaders_${tabId}`];
+      const previousResults = data[`stackResults_${tabId}`] || null;
+      const previousInteractionResult = previousResults?.performance?.interaction || null;
+
+      const finalInteractionResult = pickMoreReliableInteractionResult(previousInteractionResult, interactionPerformanceResult);
 
       if (headerCDN && cdnResult) {
         cdnResult.edge = headerCDN.edge;
@@ -165,7 +127,9 @@ async function runDetection() {
         });
       }
 
-      sendResults(primary, secondary, renderingResult, cdnResult, loadingPerformanceResult, interactionPerformanceResult, seoResult, accessibilityResult, summary, fallback);
+      const summary = buildSummary(loadingPerformanceResult, finalInteractionResult, seoResult, accessibilityResult);
+
+      sendResults(primary, secondary, renderingResult, cdnResult, loadingPerformanceResult, finalInteractionResult, seoResult, accessibilityResult, summary, fallback);
     });
   });
 }
@@ -251,6 +215,93 @@ function applyFrameworkOverrides(results) {
       react.note = "Handled by Gatsby";
     }
   }
+}
+
+function buildSummary(loadingPerformanceResult, interactionPerformanceResult, seoResult, accessibilityResult) {
+  const loadingPerformanceScore = loadingPerformanceResult?.score ?? null;
+  const interactionPerformanceScore = interactionPerformanceResult?.score ?? null;
+  const seoScore = seoResult?.score ?? null;
+  const accessibilityScore = accessibilityResult?.score ?? null;
+
+  let overallScore = null;
+
+  const scores = {
+    loading: loadingPerformanceScore,
+    interaction: interactionPerformanceScore,
+    seo: seoScore,
+    accessibility: accessibilityScore,
+  };
+
+  if (scores.loading != null || scores.interaction != null || scores.seo != null || scores.accessibility != null) {
+    overallScore = calculateOverallScore(scores);
+  }
+
+  const levelPriority = {
+    critical: 2,
+    warning: 1,
+  };
+
+  const allIssues = [...(loadingPerformanceResult?.insights || []), ...(interactionPerformanceResult?.insights || []), ...(seoResult?.insights || []), ...(accessibilityResult?.insights || [])];
+
+  const totalIssueCounts = {
+    critical: allIssues.filter((i) => i.level === "critical").length,
+    warning: allIssues.filter((i) => i.level === "warning").length,
+  };
+
+  const topIssues = allIssues
+    .filter((i) => i.level === "critical" || i.level === "warning")
+    .sort((a, b) => levelPriority[b.level] - levelPriority[a.level])
+    .slice(0, 3);
+
+  return {
+    loadingPerformanceScore,
+    interactionPerformanceScore,
+    seoScore,
+    accessibilityScore,
+    overallScore,
+    topIssues,
+    totalIssueCounts,
+    allInsights: allIssues,
+  };
+}
+
+function pickMoreReliableInteractionResult(previousResult, nextResult) {
+  if (!previousResult) return nextResult;
+  if (!nextResult) return previousResult;
+
+  const previousJsRank = getJsActivityRank(previousResult?.data?.jsAnimationActivity?.level);
+  const nextJsRank = getJsActivityRank(nextResult?.data?.jsAnimationActivity?.level);
+
+  if (previousJsRank > nextJsRank) {
+    return previousResult;
+  }
+
+  if (nextJsRank > previousJsRank) {
+    return nextResult;
+  }
+
+  const previousInteractionCount = previousResult?.data?.interactionAnimationCount ?? 0;
+  const nextInteractionCount = nextResult?.data?.interactionAnimationCount ?? 0;
+
+  if (previousInteractionCount > nextInteractionCount) {
+    return previousResult;
+  }
+
+  if (nextInteractionCount > previousInteractionCount) {
+    return nextResult;
+  }
+
+  const previousAnimatedCount = previousResult?.data?.animatedCount ?? 0;
+  const nextAnimatedCount = nextResult?.data?.animatedCount ?? 0;
+
+  return previousAnimatedCount >= nextAnimatedCount ? previousResult : nextResult;
+}
+
+function getJsActivityRank(level) {
+  if (level === "high") return 3;
+  if (level === "medium") return 2;
+  if (level === "low") return 1;
+  return 0;
 }
 
 runDetection();
