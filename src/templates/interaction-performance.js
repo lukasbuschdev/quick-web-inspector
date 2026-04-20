@@ -1,4 +1,4 @@
-import { buildPerformanceInsightGroup, getScoreClass } from "../utils/helpers";
+import { getScoreClass, renderInsightItem } from "../utils/helpers";
 
 export function renderInteraction(interaction) {
   if (!interaction || !interaction.data) {
@@ -27,24 +27,17 @@ export function renderInteraction(interaction) {
     ${metricRow("Gradients", d.gradientCount, "gradientCount", d)}
     ${metricRow("Layout-triggering animations", d.layoutAnimationCount, "layoutAnimationCount", d)}
     ${metricRow("GPU-friendly animations", d.gpuFriendlyAnimationCount, null, null)}
-    ${metricRow("Reduced motion", d.hasReducedMotionSupport ? "supported" : "not supported", null, null, !d.hasReducedMotionSupport)}
+    ${metricRow("Reduced motion", d.hasReducedMotionSupport ? "supported" : "not supported", d.hasReducedMotionSupport ? "good" : "warning")}
     ${metricRow("JS-driven animations", d.jsAnimationActivity?.detected ? formatJsAnimationLabel(d.jsAnimationActivity) : "none", "jsAnimationActivity", d)}
   `;
 
-  const groupedInsights = { critical: [], warning: [], good: [] };
-
-  (interaction.insights || []).forEach((item) => {
-    if (groupedInsights[item.level]) {
-      groupedInsights[item.level].push(item.message);
-    }
-  });
-
+  const groupedInsights = groupAndPrioritizeInsights(interaction.insights || []);
   const issueCount = groupedInsights.critical.length + groupedInsights.warning.length;
 
   const insightsItems = `
-    ${buildPerformanceInsightGroup("Critical Issues", groupedInsights.critical, "critical")}
-    ${buildPerformanceInsightGroup("Warnings", groupedInsights.warning, "warning")}
-    ${buildPerformanceInsightGroup("Good Signals", groupedInsights.good, "good")}
+    ${renderInsightGroup("Critical Issues", groupedInsights.critical, "critical")}
+    ${renderInsightGroup("Warnings", groupedInsights.warning, "warning")}
+    ${renderInsightGroup("Good Signals", groupedInsights.good, "good")}
   `;
 
   return /*html*/ `
@@ -154,4 +147,44 @@ function getInteractionSeverity(data) {
     layoutAnimationCount: layoutAnimationCount >= 10 ? "critical" : layoutAnimationCount >= 2 ? "warning" : "good",
     jsAnimationActivity: jsAnimationActivity?.level === "high" ? "warning" : jsAnimationActivity?.level === "medium" ? "warning" : "good",
   };
+}
+
+function groupAndPrioritizeInsights(insights) {
+  const grouped = { critical: [], warning: [], good: [] };
+
+  insights.forEach((item) => {
+    if (grouped[item.level]) {
+      grouped[item.level].push(item);
+    }
+  });
+
+  grouped.critical.sort(sortInsights);
+  grouped.warning.sort(sortInsights);
+  grouped.good.sort(sortInsights);
+
+  return grouped;
+}
+
+function sortInsights(a, b) {
+  const aHasFix = !!a.fix;
+  const bHasFix = !!b.fix;
+
+  if (aHasFix !== bHasFix) {
+    return aHasFix ? -1 : 1;
+  }
+
+  return 0;
+}
+
+function renderInsightGroup(title, items, levelClass) {
+  if (!items || items.length === 0) return "";
+
+  return /*html*/ `
+    <div class="insight-group">
+      <span class="insight-title ${levelClass}"><strong>${title}</strong></span>
+      <ul class="insight-list">
+        ${items.map(renderInsightItem).join("")}
+      </ul>
+    </div>
+  `;
 }

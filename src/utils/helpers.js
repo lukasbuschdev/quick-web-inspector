@@ -48,8 +48,8 @@ export function initAutoRefresh(tabId, renderFn) {
     });
 
     count++;
-    if (count >= 5) clearInterval(intervalId);
-  }, 1000);
+    if (count >= 10) clearInterval(intervalId);
+  }, 500);
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local") return;
@@ -82,5 +82,24 @@ export function metricRow(label, value, level = "good") {
         ${value}
       </span>
     </div>
+  `;
+}
+
+export function renderInsightItem(item) {
+  return /*html*/ `
+    <li class="insight-item">
+      <div class="insight-message">
+        ${item.message}
+      </div>
+      ${
+        item.fix
+          ? /*html*/ `
+            <div class="insight-fix">
+              <span class="fix-label"><strong>Fix:</strong></span> ${item.fix}
+            </div>
+          `
+          : ""
+      }
+    </li>
   `;
 }

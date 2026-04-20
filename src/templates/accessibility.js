@@ -1,22 +1,15 @@
-import { metricRow, getScoreClass } from "../utils/helpers";
+import { metricRow, getScoreClass, renderInsightItem } from "../utils/helpers";
 
 export function renderAccessibility(accessibility) {
   const insights = accessibility.insights || [];
 
-  const groupedInsights = { critical: [], warning: [], info: [] };
-
-  insights.forEach((item) => {
-    if (groupedInsights[item.level]) {
-      groupedInsights[item.level].push(item.message);
-    }
-  });
-
+  const groupedInsights = groupAndPrioritizeInsights(insights);
   const issueCount = groupedInsights.critical.length + groupedInsights.warning.length;
 
   const insightsItems = `
-    ${buildInsightGroup("Critical Issues", groupedInsights.critical, "critical")}
-    ${buildInsightGroup("Warnings", groupedInsights.warning, "warning")}
-    ${buildInsightGroup("Info", groupedInsights.info, "info")}
+    ${renderInsightGroup("Critical Issues", groupedInsights.critical, "critical")}
+    ${renderInsightGroup("Warnings", groupedInsights.warning, "warning")}
+    ${renderInsightGroup("Suggestions", groupedInsights.info, "info")}
   `;
 
   return /*html*/ `
@@ -48,14 +41,42 @@ export function renderAccessibility(accessibility) {
   `;
 }
 
-function buildInsightGroup(title, items, className) {
-  if (!items.length) return "";
+function groupAndPrioritizeInsights(insights) {
+  const grouped = { critical: [], warning: [], info: [], good: [] };
+
+  insights.forEach((item) => {
+    if (grouped[item.level]) {
+      grouped[item.level].push(item);
+    }
+  });
+
+  grouped.critical.sort(sortInsights);
+  grouped.warning.sort(sortInsights);
+  grouped.info.sort(sortInsights);
+  grouped.good.sort(sortInsights);
+
+  return grouped;
+}
+
+function sortInsights(a, b) {
+  const aHasFix = !!a.fix;
+  const bHasFix = !!b.fix;
+
+  if (aHasFix !== bHasFix) {
+    return aHasFix ? -1 : 1;
+  }
+
+  return 0;
+}
+
+function renderInsightGroup(title, items, levelClass) {
+  if (!items || items.length === 0) return "";
 
   return /*html*/ `
-    <div class="insight-group ${className}">
-      <span class="block-title mt-15"><strong>${title}</strong></span>
-      <ul>
-        ${items.map((msg) => `<li>${msg}</li>`).join("")}
+    <div class="insight-group">
+      <span class="insight-title ${levelClass}"><strong>${title}</strong></span>
+      <ul class="insight-list">
+        ${items.map(renderInsightItem).join("")}
       </ul>
     </div>
   `;

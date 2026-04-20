@@ -2,11 +2,11 @@ export function buildFallbackInsights(pageData) {
   const insights = [];
 
   if (pageData.scripts.srcList.length === 0) {
-    insights.push("No external scripts detected → likely static or server-rendered");
+    insights.push("No external scripts detected -> likely static or server-rendered");
   }
 
   if (pageData.dom.tags.length > 100) {
-    insights.push("Large static DOM → likely server-side rendered");
+    insights.push("Large static DOM -> likely server-side rendered");
   }
 
   if (!pageData.globals.hasReact && !pageData.globals.hasVue && !pageData.globals.hasNg) {

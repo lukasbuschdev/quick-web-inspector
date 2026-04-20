@@ -130,6 +130,14 @@ ul {
 
 li {
   font-size: 1rem;
+  line-height: 1.4rem;
+}
+
+code {
+  color: #ffffff;
+  background-color: #434343;
+  border-radius: 5px;
+  padding: 2px 5px;
 }
 
 .insight-group {
@@ -149,6 +157,14 @@ li {
 
 .insight-group.good strong {
   color: #4caf50;
+}
+
+.fix-label {
+  color: #ffffff !important;
+}
+
+.level-label {
+  margin-right: 5px;
 }
 
 /* =========================

@@ -18,7 +18,8 @@ export function detectAccessibility(pageData) {
     insights.push({
       level: "warning",
       category: "Structure",
-      message: "Missing &lt;main&gt; landmark. Wrap your primary page content inside a &lt;main&gt; element to improve screen reader navigation.",
+      message: "Missing <code>&lt;main&gt;</code> landmark. Screen readers cannot easily identify the main content area.",
+      fix: "Wrap your primary content inside a <code>&lt;main&gt;</code> element to improve navigation.",
     });
   }
 
@@ -26,7 +27,8 @@ export function detectAccessibility(pageData) {
     insights.push({
       level: "info",
       category: "Structure",
-      message: "No &lt;nav&gt; landmark detected. Use a &lt;nav&gt; element for primary navigation to help users and assistive technologies understand your page structure.",
+      message: "No <code>&lt;nav&gt;</code> landmark detected. Navigation structure may be unclear for assistive technologies.",
+      fix: "Wrap primary navigation in a <code>&lt;nav&gt;</code> element to improve structure and accessibility.",
     });
   }
 
@@ -34,7 +36,8 @@ export function detectAccessibility(pageData) {
     insights.push({
       level: "warning",
       category: "Forms",
-      message: `${buttonsMissingType} buttons missing type attribute. Add type=\"button\" or type=\"submit\" to avoid unintended form submissions.`,
+      message: `${buttonsMissingType} buttons missing type attribute. This can cause unintended form submissions.`,
+      fix: 'Add type="button" or type="submit" explicitly to each button.',
     });
   }
 
@@ -42,7 +45,8 @@ export function detectAccessibility(pageData) {
     insights.push({
       level: "critical",
       category: "Forms",
-      message: `${unlabeledButtons} buttons without accessible name. Add visible text or use aria-label to describe the button’s action (e.g. aria-label=\"Open menu\").`,
+      message: `${unlabeledButtons} buttons have no accessible name. Users cannot understand their purpose.`,
+      fix: "Add visible text or use aria-label to clearly describe each button action.",
     });
   }
 
@@ -50,7 +54,8 @@ export function detectAccessibility(pageData) {
     insights.push({
       level: "warning",
       category: "Interaction",
-      message: `${fakeButtons} elements behave like buttons but are not semantic &lt;button&gt;. Use &lt;button&gt; instead of &lt;div&gt; for interactive actions to improve accessibility and keyboard support.`,
+      message: `${fakeButtons} elements behave like buttons but are not semantic buttons.`,
+      fix: "Replace non-semantic elements (like divs) with <code>&lt;button&gt;</code> for proper accessibility and keyboard support.",
     });
   }
 
@@ -58,7 +63,8 @@ export function detectAccessibility(pageData) {
     insights.push({
       level: "critical",
       category: "Interaction",
-      message: `${inaccessibleInteractive} interactive elements lack keyboard accessibility. Add tabindex=\"0\" and ensure they can be activated using Enter or Space.`,
+      message: `${inaccessibleInteractive} interactive elements are not keyboard accessible.`,
+      fix: 'Ensure elements are focusable (tabindex="0") and support Enter and Space interaction.',
     });
   }
 
@@ -66,7 +72,8 @@ export function detectAccessibility(pageData) {
     insights.push({
       level: "warning",
       category: "Interaction",
-      message: "Interactive elements implemented as &lt;div&gt;. Replace them with semantic elements like &lt;button&gt; or &lt;a&gt; to improve accessibility and maintainability.",
+      message: "Many interactive elements are implemented as <code>&lt;div&gt;</code> instead of semantic elements.",
+      fix: "Use <code>&lt;button&gt;</code> or <code>&lt;a&gt;</code> instead of <code>&lt;div&gt;</code> for interactive elements.",
     });
   }
 
@@ -74,7 +81,8 @@ export function detectAccessibility(pageData) {
     insights.push({
       level: "critical",
       category: "Forms",
-      message: `${inputsWithoutLabel} inputs without label. Use &lt;label for=\"id\"&gt; or aria-label to clearly describe each input field.`,
+      message: `${inputsWithoutLabel} inputs have no label. Users cannot understand what to enter.`,
+      fix: "Associate each input with a <code>&lt;label&gt;</code> or use aria-label to describe its purpose.",
     });
   }
 
@@ -82,7 +90,8 @@ export function detectAccessibility(pageData) {
     insights.push({
       level: "warning",
       category: "Interaction",
-      message: `${anchorWithoutHref} anchor elements used as buttons (missing href). Use &lt;button&gt; for actions or provide a valid href for navigation.`,
+      message: `${anchorWithoutHref} anchor elements are used as buttons without href.`,
+      fix: "Use <code>&lt;button&gt;</code> for actions or provide a valid href for navigation links.",
     });
   }
 
@@ -90,7 +99,8 @@ export function detectAccessibility(pageData) {
     insights.push({
       level: "warning",
       category: "Accessibility",
-      message: `${elementsWithoutFocusStyle} interactive elements may lack visible focus styles. Ensure focus states are clearly visible (e.g. outline or border) so keyboard users can navigate effectively.`,
+      message: `${elementsWithoutFocusStyle} interactive elements may lack visible focus styles.`,
+      fix: "Ensure focus states are clearly visible using outline, border, or similar styles.",
     });
   }
 
@@ -106,7 +116,8 @@ export function detectAccessibility(pageData) {
     insights.push({
       level: "good",
       category: "Structure",
-      message: "Navigation landmark detected. This helps users and assistive technologies understand site navigation.",
+      message: "Navigation landmark detected. Navigation structure is clearly defined.",
+      fix: null,
     });
   }
 
@@ -114,7 +125,8 @@ export function detectAccessibility(pageData) {
     insights.push({
       level: "good",
       category: "Forms",
-      message: "All buttons have accessible names. This improves usability and accessibility.",
+      message: "All buttons have accessible names.",
+      fix: null,
     });
   }
 
@@ -122,7 +134,8 @@ export function detectAccessibility(pageData) {
     insights.push({
       level: "good",
       category: "Forms",
-      message: "All input fields are properly labeled. This improves form accessibility.",
+      message: "All input fields are properly labeled.",
+      fix: null,
     });
   }
 
@@ -130,7 +143,8 @@ export function detectAccessibility(pageData) {
     insights.push({
       level: "good",
       category: "Interaction",
-      message: "No fake button patterns detected. Semantic elements are used correctly.",
+      message: "No fake button patterns detected.",
+      fix: null,
     });
   }
 
@@ -139,6 +153,7 @@ export function detectAccessibility(pageData) {
       level: "good",
       category: "Interaction",
       message: "Interactive elements support keyboard navigation.",
+      fix: null,
     });
   }
 
@@ -147,6 +162,7 @@ export function detectAccessibility(pageData) {
       level: "good",
       category: "Interaction",
       message: "No anchors misused as buttons detected.",
+      fix: null,
     });
   }
 
@@ -154,7 +170,8 @@ export function detectAccessibility(pageData) {
     insights.push({
       level: "good",
       category: "Forms",
-      message: "All buttons define a type attribute, preventing unintended form behavior.",
+      message: "All buttons define a type attribute.",
+      fix: null,
     });
   }
 
@@ -162,7 +179,8 @@ export function detectAccessibility(pageData) {
     insights.push({
       level: "good",
       category: "Accessibility",
-      message: "Focus styles appear to be present on interactive elements.",
+      message: "Focus styles are present on interactive elements.",
+      fix: null,
     });
   }
 

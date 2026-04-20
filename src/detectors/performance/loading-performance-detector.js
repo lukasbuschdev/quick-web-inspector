@@ -248,64 +248,80 @@ function buildPerformanceInsights({ coreWebVitals, bundleAnalysis, renderBlockin
 
   const source = "Loading";
 
-  if (lcp != null) {
-    if (lcp < 1800) {
-      insights.push({ level: "good", message: "Fast Largest Contentful Paint. The main content becomes visible quickly, which improves perceived loading speed and user engagement.", source });
-    } else if (lcp < 3000) {
-      insights.push({
-        level: "warning",
-        message: "LCP is slightly delayed. The main content takes noticeable time to appear. Optimize largest images, reduce server response time, and avoid blocking JavaScript during initial load.",
-        source,
-      });
-    } else {
-      insights.push({
-        level: "critical",
-        message: "Slow LCP detected. The main content appears too late. Prioritize optimizing large images, reduce JavaScript execution on load, use a CDN, and improve server response time.",
-        source,
-      });
-    }
+  if (lcp < 1800) {
+    insights.push({
+      level: "good",
+      message: "Fast LCP. Main content appears quickly.",
+      fix: null,
+      source,
+    });
+  } else if (lcp < 3000) {
+    insights.push({
+      level: "warning",
+      message: "LCP is slightly delayed. Main content appears later than ideal.",
+      fix: "Optimize largest images, reduce server response time, and avoid blocking JavaScript.",
+      source,
+    });
+  } else {
+    insights.push({
+      level: "critical",
+      message: "Slow LCP detected. Main content appears too late.",
+      fix: "Compress hero media, reduce blocking JavaScript, use a CDN, and improve server response time.",
+      source,
+    });
   }
 
-  if (cls != null) {
-    if (cls < 0.1) {
-      insights.push({ level: "good", message: "Layout is stable. Elements do not shift during loading, providing a smooth visual experience.", source });
-    } else if (cls < 0.25) {
-      insights.push({
-        level: "warning",
-        message: "Layout shifts detected. Elements move during loading. Reserve space for images, ads, and dynamic content using fixed dimensions or aspect ratios.",
-        source,
-      });
-    } else {
-      insights.push({
-        level: "critical",
-        message: "High layout instability. Content shifts significantly during load. Always define width and height for media and avoid injecting content above existing elements.",
-        source,
-      });
-    }
+  if (cls < 0.1) {
+    insights.push({
+      level: "good",
+      message: "Stable layout. Elements stay in place during loading.",
+      fix: null,
+      source,
+    });
+  } else if (cls < 0.25) {
+    insights.push({
+      level: "warning",
+      message: "Layout shifts detected. Elements move during loading.",
+      fix: "Reserve space for images and dynamic content using fixed dimensions or aspect ratios.",
+      source,
+    });
+  } else {
+    insights.push({
+      level: "critical",
+      message: "High layout instability detected. Content shifts significantly during load.",
+      fix: "Always define width and height for media and avoid injecting content above existing elements.",
+      source,
+    });
   }
 
-  if (jsSize != null) {
-    if (jsSize < 150 * 1024) {
-      insights.push({ level: "good", message: "Small JavaScript bundle. Minimal script size reduces parsing and execution time, improving load performance.", source });
-    } else if (jsSize < 400 * 1024) {
-      insights.push({
-        level: "warning",
-        message: "Moderate JavaScript size. This may delay interactivity. Split code by route or feature and lazy load non-critical modules.",
-        source,
-      });
-    } else {
-      insights.push({
-        level: "critical",
-        message: "Large JavaScript bundle detected. This increases load and execution time. Use code splitting, remove unused dependencies, and defer non-critical scripts.",
-        source,
-      });
-    }
+  if (jsSize < 150 * 1024) {
+    insights.push({
+      level: "good",
+      message: "Small JavaScript bundle. Script execution cost is low.",
+      fix: null,
+      source,
+    });
+  } else if (jsSize < 400 * 1024) {
+    insights.push({
+      level: "warning",
+      message: "Moderate JavaScript size. This may delay interactivity on slower devices.",
+      fix: "Split code by route or feature and lazy load non-critical modules.",
+      source,
+    });
+  } else {
+    insights.push({
+      level: "critical",
+      message: "Large JavaScript bundle detected. This increases load and execution time.",
+      fix: "Use code splitting, remove unused dependencies, and defer non-critical scripts.",
+      source,
+    });
   }
 
   if (jsCount > 20) {
     insights.push({
       level: "warning",
-      message: "Many JavaScript files detected. Excessive script requests increase network overhead. Consider bundling smaller files or using HTTP/2 efficiently.",
+      message: "Many JavaScript files detected. Network overhead may increase.",
+      fix: "Bundle smaller files where appropriate or ensure efficient HTTP/2 usage.",
       source,
     });
   }
@@ -313,7 +329,8 @@ function buildPerformanceInsights({ coreWebVitals, bundleAnalysis, renderBlockin
   if (blockingCSS > 0) {
     insights.push({
       level: "warning",
-      message: "Render-blocking CSS detected. Stylesheets delay page rendering. Inline critical CSS for above-the-fold content and defer non-essential styles.",
+      message: "Render-blocking CSS detected. Stylesheets may delay first paint.",
+      fix: "Inline critical CSS and defer non-essential styles.",
       source,
     });
   }
@@ -321,19 +338,26 @@ function buildPerformanceInsights({ coreWebVitals, bundleAnalysis, renderBlockin
   if (syncScripts > 0) {
     insights.push({
       level: "critical",
-      message: "Synchronous scripts in <head> block rendering. These scripts pause HTML parsing. Add 'defer' or 'async' to prevent blocking initial page load.",
+      message: "Synchronous scripts in head block rendering and delay initial paint.",
+      fix: "Add 'defer' or 'async' to scripts to prevent blocking HTML parsing.",
       source,
     });
   }
 
   if (lcp != null && cls != null && lcp < 2500 && cls < 0.1 && jsSize < 150 * 1024) {
-    insights.push({ level: "good", message: "Strong loading performance. Fast rendering, stable layout, and small bundles indicate an optimized loading strategy.", source });
+    insights.push({
+      level: "good",
+      message: "Strong loading performance overall. Fast rendering and stable layout.",
+      fix: null,
+      source,
+    });
   }
 
   if (largestScript && largestScript.raw > 200 * 1024) {
     insights.push({
       level: "warning",
-      message: `Large script detected (${largestScript.size}). Consider splitting or deferring this file to reduce initial load time.`,
+      message: `Large script detected (${largestScript.size}). This may slow initial load.`,
+      fix: "Split this file or defer it to reduce its impact on initial rendering.",
       source,
     });
   }
@@ -341,13 +365,15 @@ function buildPerformanceInsights({ coreWebVitals, bundleAnalysis, renderBlockin
   if (totalImageSize > 2 * 1024 * 1024) {
     insights.push({
       level: "critical",
-      message: `High total image weight (${formatBytes(totalImageSize)}). Compress images and use modern formats like WebP or AVIF.`,
+      message: `High total image weight (${formatBytes(totalImageSize)}). Images likely slow down loading.`,
+      fix: "Compress images and use modern formats like WebP or AVIF.",
       source,
     });
   } else if (totalImageSize > 800 * 1024) {
     insights.push({
       level: "warning",
-      message: `Moderate image weight (${formatBytes(totalImageSize)}). Optimize large images and avoid oversized assets.`,
+      message: `Moderate image weight (${formatBytes(totalImageSize)}). Image optimization could improve load time.`,
+      fix: "Optimize large images and avoid oversized assets.",
       source,
     });
   }
@@ -363,7 +389,8 @@ function buildPerformanceInsights({ coreWebVitals, bundleAnalysis, renderBlockin
   if (largeImages && largeImages.length > 5) {
     insights.push({
       level: "warning",
-      message: `Multiple large images detected (${largeImages.length}). Consider resizing or lazy loading offscreen images.`,
+      message: `Multiple large images detected (${largeImages.length}). This adds avoidable weight.`,
+      fix: "Resize large images and lazy load offscreen assets.",
       source,
     });
   }
@@ -371,13 +398,15 @@ function buildPerformanceInsights({ coreWebVitals, bundleAnalysis, renderBlockin
   if (imageCount > 50) {
     insights.push({
       level: "warning",
-      message: `Large number of images detected (${imageCount}). Many requests can slow down loading. Use lazy loading and reduce unnecessary images.`,
+      message: `Very high number of images detected (${imageCount}). Request volume may hurt loading.`,
+      fix: "Reduce unnecessary images and lazy load non-visible ones.",
       source,
     });
   } else if (imageCount > 20) {
     insights.push({
       level: "warning",
-      message: `Moderate number of images (${imageCount}). Ensure offscreen images are lazy loaded to avoid unnecessary network usage.`,
+      message: `Moderate number of images detected (${imageCount}).`,
+      fix: "Ensure offscreen images are lazy loaded.",
       source,
     });
   }
@@ -385,7 +414,8 @@ function buildPerformanceInsights({ coreWebVitals, bundleAnalysis, renderBlockin
   if (imageCount > 30 && totalImageSize > 1.5 * 1024 * 1024) {
     insights.push({
       level: "critical",
-      message: `High number of images (${imageCount}) combined with large total size (${formatBytes(totalImageSize)}). This significantly impacts loading performance.`,
+      message: `Many images (${imageCount}) combined with high total weight (${formatBytes(totalImageSize)}) strongly impact loading.`,
+      fix: "Reduce image count and aggressively compress or lazy load assets.",
       source,
     });
   }

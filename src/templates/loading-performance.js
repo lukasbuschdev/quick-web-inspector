@@ -1,4 +1,4 @@
-import { buildPerformanceInsightGroup, truncateUrl, getScoreClass } from "../utils/helpers";
+import { truncateUrl, getScoreClass, renderInsightItem } from "../utils/helpers";
 
 export function renderLoading(loading) {
   const { coreWebVitals, bundleAnalysis, renderBlocking } = loading.data;
@@ -21,16 +21,16 @@ export function renderLoading(loading) {
 
   (loading.insights || []).forEach((item) => {
     if (groupedInsights[item.level]) {
-      groupedInsights[item.level].push(item.message);
+      groupedInsights[item.level].push(item);
     }
   });
 
   const issueCount = groupedInsights.critical.length + groupedInsights.warning.length;
 
   const insightsItems = `
-    ${buildPerformanceInsightGroup("Critical Issues", groupedInsights.critical, "critical")}
-    ${buildPerformanceInsightGroup("Warnings", groupedInsights.warning, "warning")}
-    ${buildPerformanceInsightGroup("Good Signals", groupedInsights.good, "good")}
+    ${renderInsightGroup("Critical Issues", groupedInsights.critical, "critical")}
+    ${renderInsightGroup("Warnings", groupedInsights.warning, "warning")}
+    ${renderInsightGroup("Good Signals", groupedInsights.good, "good")}
   `;
 
   return /*html*/ `
@@ -178,4 +178,17 @@ function basename(url) {
   } catch {
     return url;
   }
+}
+
+function renderInsightGroup(title, items, levelClass) {
+  if (!items || items.length === 0) return "";
+
+  return /*html*/ `
+    <div class="insight-group">
+      <span class="insight-title ${levelClass}"><strong>${title}</strong></span>
+      <ul class="insight-list">
+        ${items.map(renderInsightItem).join("")}
+      </ul>
+    </div>
+  `;
 }

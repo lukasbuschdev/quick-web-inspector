@@ -1,4 +1,4 @@
-import{o as e,s as t,t as n}from"./assets/technology-fallback-D1ddy1eH.js";function r(t){let{loadingPerformanceScore:n,interactionPerformanceScore:r,seoScore:a,accessibilityScore:o,overallScore:s,totalIssueCounts:c,primaryDetected:l}=t,u={critical:c?.critical??0,warning:c?.warning??0};return`
+import{a as e,o as t,t as n}from"./assets/technology-fallback-C3INLPKq.js";function r(t){let{loadingPerformanceScore:n,interactionPerformanceScore:r,seoScore:a,accessibilityScore:o,overallScore:s,totalIssueCounts:c,primaryDetected:l}=t,u={critical:c?.critical??0,warning:c?.warning??0};return`
     <div class="result-section"><strong>Quick Overview</strong></div>
     <div class="result-card column gap-20 summary">
       <div class="summary-score">

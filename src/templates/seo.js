@@ -1,22 +1,15 @@
-import { metricRow, truncateUrl, getScoreClass } from "../utils/helpers";
+import { metricRow, truncateUrl, getScoreClass, renderInsightItem } from "../utils/helpers";
 
 export function renderSEO(seo) {
   const { title, description, canonical, lang, headings, images, meta } = seo.data;
 
-  const groupedInsights = { critical: [], warning: [], good: [] };
-
-  (seo.insights || []).forEach((item) => {
-    if (groupedInsights[item.level]) {
-      groupedInsights[item.level].push(item.message);
-    }
-  });
-
+  const groupedInsights = groupAndPrioritizeInsights(seo.insights || []);
   const issueCount = groupedInsights.critical.length + groupedInsights.warning.length;
 
   const insightsItems = `
-    ${buildSeoInsightGroup("Critical Issues", groupedInsights.critical, "critical")}
-    ${buildSeoInsightGroup("Warnings", groupedInsights.warning, "warning")}
-    ${buildSeoInsightGroup("Good Signals", groupedInsights.good, "good")}
+    ${renderInsightGroup("Critical Issues", groupedInsights.critical, "critical")}
+    ${renderInsightGroup("Warnings", groupedInsights.warning, "warning")}
+    ${renderInsightGroup("Good Signals", groupedInsights.good, "good")}
   `;
 
   const h1Count = headings?.h1 ?? 0;
@@ -74,14 +67,41 @@ export function renderSEO(seo) {
   `;
 }
 
-function buildSeoInsightGroup(title, items, className) {
-  if (!items.length) return "";
+function groupAndPrioritizeInsights(insights) {
+  const grouped = { critical: [], warning: [], good: [] };
+
+  insights.forEach((item) => {
+    if (grouped[item.level]) {
+      grouped[item.level].push(item);
+    }
+  });
+
+  grouped.critical.sort(sortInsights);
+  grouped.warning.sort(sortInsights);
+  grouped.good.sort(sortInsights);
+
+  return grouped;
+}
+
+function sortInsights(a, b) {
+  const aHasFix = !!a.fix;
+  const bHasFix = !!b.fix;
+
+  if (aHasFix !== bHasFix) {
+    return aHasFix ? -1 : 1;
+  }
+
+  return 0;
+}
+
+function renderInsightGroup(title, items, levelClass) {
+  if (!items || items.length === 0) return "";
 
   return /*html*/ `
-    <div class="insight-group ${className}">
-      <span class="block-title mt-15"><strong>${title}</strong></span>
-      <ul>
-        ${items.map((msg) => `<li>${msg}</li>`).join("")}
+    <div class="insight-group">
+      <span class="insight-title ${levelClass}"><strong>${title}</strong></span>
+      <ul class="insight-list">
+        ${items.map(renderInsightItem).join("")}
       </ul>
     </div>
   `;

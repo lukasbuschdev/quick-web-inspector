@@ -109,12 +109,10 @@ async function runDetection() {
       return;
     }
 
-    chrome.storage.local.get([`cdnHeaders_${tabId}`, `stackResults_${tabId}`], (data) => {
+    chrome.storage.local.get([`cdnHeaders_${tabId}`], (data) => {
       const headerCDN = data[`cdnHeaders_${tabId}`];
-      const previousResults = data[`stackResults_${tabId}`] || null;
-      const previousInteractionResult = previousResults?.performance?.interaction || null;
 
-      const finalInteractionResult = pickMoreReliableInteractionResult(previousInteractionResult, interactionPerformanceResult);
+      const finalInteractionResult = interactionPerformanceResult;
 
       if (headerCDN && cdnResult) {
         cdnResult.edge = headerCDN.edge;
@@ -305,4 +303,4 @@ function getJsActivityRank(level) {
 }
 
 runDetection();
-setTimeout(runDetection, 3000);
+setTimeout(runDetection, 2000);

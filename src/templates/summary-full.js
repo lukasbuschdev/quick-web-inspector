@@ -14,7 +14,7 @@ export function renderFullSummary(summary) {
     .map(
       (issue) => /*html*/ `
         <li>
-          <span class="${issue.level}">[${issue.source}]</span>
+          <span class="${issue.level}"><strong>[${issue.source}]</strong></span>
           ${issue.message}
         </li>
       `,
@@ -24,7 +24,7 @@ export function renderFullSummary(summary) {
   return /*html*/ `
     <div class="result-section"><strong>Summary</strong></div>
 
-    <div class="result-card summary column gap-20">
+    <div class="result-card summary column gap-30">
       <div class="summary-score">
         <div class="row gap-10 align-center">
           <strong>Overall Score</strong>
@@ -115,29 +115,29 @@ function renderQuickWinsSection(allInsights = []) {
   if (!quick.length && !advanced.length) return "";
 
   return /*html*/ `
-    <div class="insights column gap-20">
-      <span class="block-title mt-15"><strong>Recommendations</strong></span>
-
+    <div class="insights">
       ${
         quick.length
           ? /*html*/ `
         <div class="column gap-10">
           <span class="block-title">Quick Wins</span>
-          <ul>
-            ${quick.map((msg) => `<li>${msg}</li>`).join("")}
+          <ul class="insight-list">
+            ${quick.map(renderRecommendationItem).join("")}
           </ul>
         </div>
       `
           : ""
       }
+    </div>
 
+    <div class="insights">
       ${
         advanced.length
           ? /*html*/ `
         <div class="column gap-10">
           <span class="block-title">Advanced Improvements</span>
-          <ul>
-            ${advanced.map((msg) => `<li>${msg}</li>`).join("")}
+          <ul class="insight-list">
+            ${advanced.map(renderRecommendationItem).join("")}
           </ul>
         </div>
       `
@@ -162,14 +162,62 @@ function splitQuickWins(insights = []) {
     const isQuick = QUICK_PATTERNS.some((pattern) => msg.includes(pattern));
 
     if (isQuick && !isAdvanced) {
-      quick.push(item.message);
+      quick.push(item);
     } else {
-      advanced.push(item.message);
+      advanced.push(item);
     }
   });
 
   return {
-    quick: [...new Set(quick)].slice(0, 4),
-    advanced: [...new Set(advanced)].slice(0, 4),
+    quick: dedupeInsights(quick).slice(0, 3),
+    advanced: sortBySeverity(dedupeInsights(advanced)).slice(0, 3),
   };
+}
+
+function dedupeInsights(items = []) {
+  const seen = new Set();
+
+  return items.filter((item) => {
+    const key = `${item.level}|${item.source}|${item.message}|${item.fix ?? ""}`;
+
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function renderRecommendationItem(item) {
+  const levelLabel = getLevelLabel(item.level);
+
+  return /*html*/ `
+    <li class="insight-item">
+      <div class="insight-message">
+        ${levelLabel ? `<span class="level-label ${item.level}"><strong>[${levelLabel}]</strong></span> ` : ""}${item.message}
+      </div>
+      ${
+        item.fix
+          ? /*html*/ `
+            <div class="insight-fix">
+              <span class="fix-label"><strong>Fix:</strong></span> ${item.fix}
+            </div>
+          `
+          : ""
+      }
+    </li>
+  `;
+}
+
+function getLevelLabel(level) {
+  if (level === "critical") return "CRITICAL";
+  if (level === "warning") return "WARNING";
+  return null;
+}
+
+function sortBySeverity(items = []) {
+  const priority = {
+    critical: 2,
+    warning: 1,
+  };
+
+  return items.sort((a, b) => priority[b.level] - priority[a.level]);
 }

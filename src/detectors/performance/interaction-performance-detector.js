@@ -227,33 +227,38 @@ export function getInsights(data) {
   if (severity.passiveAnimationCount !== "good") {
     evidence.push({
       type: severity.passiveAnimationCount === "critical" ? "strong" : "medium",
-      message: `Multiple passive animations detected (${passiveAnimationCount}). These run continuously and can impact performance even when the page is idle.`,
+      message: `Multiple passive animations detected (${passiveAnimationCount}). Continuous motion can hurt smoothness even when the page is idle.`,
+      fix: "Reduce always-running animations and limit passive motion to small, essential elements.",
     });
   }
 
   if (severity.heavyInteractionCount !== "good") {
     evidence.push({
       type: severity.heavyInteractionCount === "critical" ? "strong" : "medium",
-      message: `${heavyInteractionCount} heavier interaction-triggered animations detected out of ${interactionAnimationCount} total interaction animations. Lightweight hover effects are usually fine, but heavier transitions using layout-changing properties or broad transition rules can feel janky and should be simplified.`,
+      message: `${heavyInteractionCount} heavier interaction animations detected out of ${interactionAnimationCount}. These effects can feel janky, especially on weaker devices.`,
+      fix: "Prefer transform and opacity based transitions, and avoid animating layout-changing properties.",
     });
   } else if (cheapInteractionCount > 0 && heavyInteractionCount === 0) {
     evidence.push({
       type: "good",
-      message: `Interaction animations are mostly lightweight (${cheapInteractionCount}). Small hover and focus effects are usually low-cost when they rely on simple visual changes.`,
+      message: `Interaction animations are mostly lightweight (${cheapInteractionCount}). Hover and focus effects appear relatively low-cost.`,
+      fix: null,
     });
   }
 
   if (severity.expensivePassiveAnimationCount !== "good") {
     evidence.push({
       type: severity.expensivePassiveAnimationCount === "critical" ? "strong" : "medium",
-      message: `${expensivePassiveAnimationCount} passive animations use paint-heavy effects such as box-shadow, filter, or backdrop-filter. These are especially costly because they run continuously.`,
+      message: `${expensivePassiveAnimationCount} passive animations use paint-heavy effects like box-shadow, filter, or backdrop-filter. These are especially expensive because they run continuously.`,
+      fix: "Avoid combining continuous animation with paint-heavy effects, or simplify those effects significantly.",
     });
   }
 
   if (severity.expensiveInteractionAnimationCount !== "good") {
     evidence.push({
       type: severity.expensiveInteractionAnimationCount === "critical" ? "strong" : "medium",
-      message: `${expensiveInteractionAnimationCount} interaction-triggered animations use paint-heavy effects. This is usually less severe than passive motion, but can still feel janky on weaker devices.`,
+      message: `${expensiveInteractionAnimationCount} interaction animations use paint-heavy effects. They may feel janky on weaker devices.`,
+      fix: "Reduce filter, backdrop-filter, and heavy shadow effects during hover, focus, and active transitions.",
     });
   }
 
@@ -261,62 +266,71 @@ export function getInsights(data) {
     evidence.push({
       type: "positive",
       message: `Supports prefers-reduced-motion.`,
+      fix: null,
     });
   }
 
   if (severity.hoverRules !== "good" && !hasHoverMediaQuery) {
     evidence.push({
       type: "medium",
-      message: `Hover interactions detected without mobile fallback. On touch devices, hover states may not behave as expected, so consider adding alternatives using media queries like (hover: none) or (pointer: coarse).`,
+      message: `Hover interactions detected without mobile fallback. On touch devices, these states may not behave as expected.`,
+      fix: "Add mobile-specific fallbacks using media queries such as (hover: none) or (pointer: coarse).",
     });
   }
 
   if (severity.fixedCount !== "good") {
     evidence.push({
       type: "weak",
-      message: `Many fixed-position elements (${fixedCount}). These can increase repaint costs during scrolling and may negatively affect performance, especially when combined with visual effects like shadows or filters.`,
+      message: `Many fixed-position elements detected (${fixedCount}). They can increase repaint cost during scrolling.`,
+      fix: "Reduce non-essential fixed elements and avoid combining them with heavy visual effects.",
     });
   }
 
   if (totalExpensiveEffects > 50) {
     evidence.push({
       type: "medium",
-      message: `High number of heavy visual effects (${totalExpensiveEffects}). Effects like box-shadow, filter, and backdrop-filter are expensive to render, so reducing or simplifying them can improve overall performance.`,
+      message: `High number of heavy visual effects detected (${totalExpensiveEffects}). This increases rendering cost across the page.`,
+      fix: "Reduce box-shadow, filter, and backdrop-filter usage, especially on large or frequently updated elements.",
     });
   }
 
   if (severity.layoutAnimationCount !== "good") {
     evidence.push({
       type: severity.layoutAnimationCount === "critical" ? "strong" : "medium",
-      message: `Animations are modifying layout properties (e.g. width, height, margin). This triggers layout recalculation and causes jank.`,
+      message: `Animations are modifying layout properties. This triggers layout recalculation and can cause jank.`,
+      fix: "Replace layout-based animation with transform or opacity whenever possible.",
     });
   }
 
   if (gpuFriendlyAnimationCount > 0 && layoutAnimationCount === 0) {
     evidence.push({
       type: "good",
-      message: `Animations use GPU-friendly properties (transform, opacity).`,
+      message: `Animations mainly use GPU-friendly properties like transform and opacity.`,
+      fix: null,
     });
   }
 
   if (severity.gradientCount !== "good") {
     evidence.push({
       type: "weak",
-      message: `Many gradient backgrounds detected (${gradientCount}). While gradients are visually appealing, complex or frequently repainted gradients can increase rendering cost and should be used selectively.`,
+      message: `Many gradient backgrounds detected (${gradientCount}). Complex or frequently repainted gradients can increase rendering cost.`,
+      fix: "Use gradients more selectively, especially on large or animated elements.",
     });
   }
 
   if (jsAnimationActivity?.detected) {
     evidence.push({
       type: jsAnimationActivity.level === "high" ? "medium" : "weak",
-      message: `JavaScript-driven animation activity detected. This likely includes runtime updates outside normal CSS animations, such as SVG or DOM attribute changes. Smoothness depends on how often these updates run and how efficiently they are rendered.`,
+      message: `JavaScript-driven animation activity detected. Runtime updates may add extra rendering work outside normal CSS animations.`,
+      fix: "Throttle frequent updates and prefer CSS-based animation where possible.",
     });
   }
 
   return {
     insights: evidence.map((item) => ({
-      level: item.type === "strong" ? "critical" : item.type === "medium" ? "warning" : "good",
+      level: item.type === "strong" ? "critical" : item.type === "medium" ? "warning" : item.type === "weak" ? "warning" : "good",
       message: item.message,
+      fix: item.fix ?? null,
       source: "Interaction",
     })),
   };
