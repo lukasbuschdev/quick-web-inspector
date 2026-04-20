@@ -1,4 +1,4 @@
-import { formatType, getConfidenceClass } from "../utils/helpers";
+import { formatType, getConfidenceClass, getConfidenceLabel } from "../utils/helpers";
 
 export function renderSecondary(result) {
   const evidenceItems = (result.evidence || []).map((item) => `<li>${item.message}</li>`).join("");
@@ -12,7 +12,7 @@ export function renderSecondary(result) {
           ${result.name}
         </span>
         <span class="metric ${getConfidenceClass(result.confidence)}">
-          ${result.confidence}%
+          ${formatSecondaryConfidence(result)}
         </span>
       </div>
 
@@ -43,4 +43,18 @@ export function renderSecondaryFallback() {
       </span>
     </div>
   `;
+}
+
+function formatSecondaryConfidence(result) {
+  const { confidence = 0, evidence = [] } = result;
+
+  if (confidence < 20) {
+    return `<span class="muted">Weak signal</span>`;
+  }
+
+  const label = getConfidenceLabel(confidence, evidence);
+
+  const softenedLabel = label === "Proven" ? "Detected" : label === "Very likely" ? "Strong signal" : label === "Likely" ? "Likely" : label === "Plausible" ? "Possible" : "Weak signal";
+
+  return `${softenedLabel} (${confidence}%)`;
 }

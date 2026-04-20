@@ -1,4 +1,4 @@
-import { formatType, getConfidenceClass } from "../utils/helpers";
+import { formatType, getConfidenceClass, getConfidenceLabel } from "../utils/helpers";
 
 export function renderPrimary(primary, categoryInsights) {
   const evidenceItems = (primary.evidence || []).map((item) => `<li>${item.message}</li>`).join("");
@@ -17,7 +17,7 @@ export function renderPrimary(primary, categoryInsights) {
           ${primary.name}
         </span>
         <span class="metric ${getConfidenceClass(primary.confidence)}">
-          ${primary.confidence}%
+          ${getConfidenceLabel(primary.confidence, primary.evidence)} (${primary.confidence}%)
         </span>
       </div>
 

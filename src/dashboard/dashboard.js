@@ -2,7 +2,7 @@ import { renderCDN } from "../templates/cdn";
 import { renderInteraction } from "../templates/interaction-performance";
 import { renderLoading } from "../templates/loading-performance";
 import { renderPrimary, renderPrimaryFallback } from "../templates/primary-technologies";
-import { renderRenderingStrategy } from "../templates/rendering";
+import { renderRenderingStrategy, renderRenderingStrategyFallback } from "../templates/rendering";
 import { renderSecondary, renderSecondaryFallback } from "../templates/secondary-technologies";
 import { renderSEO } from "../templates/seo";
 import { renderFullSummary } from "../templates/summary-full";
@@ -55,7 +55,12 @@ function renderDashboard(data) {
       `;
   }
 
-  if (rendering) html += renderRenderingStrategy(rendering);
+  if (rendering) {
+    html += renderRenderingStrategy(rendering);
+  } else {
+    html += renderRenderingStrategyFallback();
+  }
+
   if (cdn) html += renderCDN(cdn);
   if (!html) html = renderFallback();
 

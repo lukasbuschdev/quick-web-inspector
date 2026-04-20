@@ -24,9 +24,19 @@ export function getScoreClass(score) {
 }
 
 export function getConfidenceClass(confidence) {
-  if (confidence >= 85) return "good";
-  if (confidence >= 60) return "warning";
-  return "critical";
+  if (confidence >= 80) return "good";
+  if (confidence >= 50) return "warning";
+  return "muted";
+}
+
+export function getConfidenceLabel(confidence = 0, evidence = []) {
+  const hasDecisive = evidence.some((e) => e.decisive);
+
+  if (hasDecisive) return "Proven";
+  if (confidence >= 80) return "Very likely";
+  if (confidence >= 60) return "Likely";
+  if (confidence >= 40) return "Plausible";
+  return "Weak signal";
 }
 
 export function initAutoRefresh(tabId, renderFn) {

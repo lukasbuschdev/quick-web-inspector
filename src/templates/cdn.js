@@ -1,28 +1,26 @@
-import { getConfidenceClass } from "../utils/helpers";
+import { getConfidenceClass, getConfidenceLabel } from "../utils/helpers";
 
 export function renderCDN(cdn) {
   const evidenceItems = (cdn.evidence || []).map((item) => `<li>${item.message}</li>`).join("");
   const title = cdn.edge || cdn.platform || (cdn.assets && cdn.assets.length > 0 ? "Asset CDN detected" : "No CDN detected");
-  const source = cdn.source === "headers" ? "server headers" : "resource analysis";
+  const source = cdn.source === "headers" ? "server headers (high confidence)" : "resource analysis";
 
   return /*html*/ `
-    <div class="result-section"><strong>Delivery & Hosting</strong></div>
+    <div class="result-section"><strong>CDN & Hosting</strong></div>
     <div class="result-card column gap-30">
       <div class="result-header">
         <span><strong>${title}</strong></span>
-        <span class="metric ${getConfidenceClass(cdn.confidence)}">
-          ${cdn.confidence}%
-        </span>
+          <span class="metric ${getConfidenceClass(cdn.confidence)}">
+            ${renderCDNConfidence(cdn)}
+          </span>
       </div>
 
       <div class="metric-block">
         <span class="block-title">Details</span>
-
         ${metricRow("Detected via", source)}
         ${cdn.edge ? metricRow("Edge", cdn.edge) : ""}
         ${cdn.platform ? metricRow("Platform", cdn.platform) : ""}
         ${cdn.assets && cdn.assets.length > 0 ? metricRow("Assets", cdn.assets.join(", ")) : ""}
-
       </div>
 
       <div class="metric-block">
@@ -39,5 +37,33 @@ function metricRow(label, value) {
       <span>${label}</span>
       <span class="white">${value}</span>
     </div>
+  `;
+}
+
+function formatCDNConfidence(cdn) {
+  const { confidence = 0, evidence = [], source } = cdn;
+
+  if (confidence < 20) {
+    return "";
+  }
+
+  if (source === "headers") {
+    return `Proven (${confidence}%)`;
+  }
+
+  const label = getConfidenceLabel(confidence, evidence);
+
+  return `${label} (${confidence}%)`;
+}
+
+function renderCDNConfidence(cdn) {
+  const label = formatCDNConfidence(cdn);
+
+  if (!label) return "";
+
+  return /*html*/ `
+    <span class="metric ${getConfidenceClass(cdn.confidence)}">
+      ${label}
+    </span>
   `;
 }
